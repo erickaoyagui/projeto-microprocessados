@@ -77,7 +77,7 @@ typedef struct { // struct usado para guardar as variaveis de horas, minutos e s
 /* USER CODE BEGIN PD */
 #define DT_VARRE  5             // inc varredura a cada 5 ms (~200 Hz)
 #define DIGITO_APAGADO 0x10    // kte valor p/ apagar um d�ｿｽgito no display
-#define SEGUNDO 1000
+#define SEGUNDO 100
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -195,6 +195,7 @@ int main(void) {
 		if ((HAL_GetTick() - tIN_relogio) > SEGUNDO) {
 			tIN_relogio = HAL_GetTick();
 			actualTime.seconds++;
+			HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_15);
 			verifyTime(&actualTime);
 			uniHours = actualTime.hours % 10;
 			dezHours = actualTime.hours / 10;
@@ -245,94 +246,81 @@ int main(void) {
 			}
 			break;
 		case LDR_LOCAL:
+			// tarefa #1: se (modo_oper=1) faz uma convers�ｿｽo ADC
+			if (get_modo_oper() == 1) {
+				// dispara por software uma convers�ｿｽo ADC
+				set_modo_oper(0);                // muda modo_oper p/ 0
+				HAL_ADC_Start_IT(&hadc1);  // dispara ADC p/ convers�ｿｽo por IRQ
+			}
+
+			//tarefa #2: depois do IRQ ADC, converte para mVs (decimal, p/ 7-seg)
+			if (get_modo_oper() == 2)      // entra qdo valor val_adc atualizado
+					{
+				// converter o valor lido em decimais p/ display
+				miliVolt = val_adc * 3300 / 4095;
+				uniADC = miliVolt / 1000;
+				dezADC = (miliVolt - (uniADC * 1000)) / 100;
+				cenADC = (miliVolt - (uniADC * 1000) - (dezADC * 100)) / 10;
+				milADC = miliVolt - (uniADC * 1000) - (dezADC * 100)
+						- (cenADC * 10);
+				set_modo_oper(0);                // zera var modo_oper
+			}
+
+			// tarefa #3: qdo milis() > DELAY_VARRE ms, desde a �ｿｽltima mudan�ｿｽa
+			if ((HAL_GetTick() - tIN_varre) > DT_VARRE) // se ++0,1s atualiza o display
+			{
+				tIN_varre = HAL_GetTick();  // salva tIN p/ prox tempo varredura
+				switch (sttVARRE)
+				// teste e escolha de qual DIG vai varrer
+				{
+				case DIG_MILS: {
+					sttVARRE = DIG_CENS;           // ajusta p/ prox digito
+					serial_data = 0x0008;          // display #1
+					val7seg = conv_7_seg(milADC);
+					break;
+				}
+				case DIG_CENS: {
+					sttVARRE = DIG_DEC;            // ajusta p/ prox digito
+					serial_data = 0x00004;         // display #2
+					if (cenADC > 0 || dezADC > 0 || uniADC > 0) {
+						val7seg = conv_7_seg(cenADC);
+					} else {
+						val7seg = conv_7_seg(DIGITO_APAGADO);
+					}
+					break;
+				}
+				case DIG_DEC: {
+					sttVARRE = DIG_UNI;            // ajusta p/ prox digito
+					serial_data = 0x0002;          // display #3
+					if (dezADC > 0 || uniADC > 0) {
+						val7seg = conv_7_seg(dezADC);
+					} else {
+						val7seg = conv_7_seg(DIGITO_APAGADO);
+					}
+					break;
+				}
+				case DIG_UNI: {
+					sttVARRE = DIG_MILS;           // ajusta p/ prox digito
+					serial_data = 0x0001;          // display #3
+					if (uniADC > 0) {
+						val7seg = conv_7_seg(uniADC);
+						val7seg &= 0x7FFF;            // liga o ponto decimal
+					} else {
+						val7seg = conv_7_seg(DIGITO_APAGADO);
+					}
+					break;
+				}
+				}  // fim case
+				tIN_varre = HAL_GetTick(); // tmp atual em que fez essa varredura
+				serial_data |= val7seg;    // OR com val7seg = dado a serializar
+				serializar(serial_data); // serializa dado p/74HC595 (shift reg)
+			}  // -- fim da tarefa #3 - varredura do display
+
 			break;
 		case LDR_NOT_LOCAL:
 			break;
 		}
-		/*
-		 // tarefa #1: se (modo_oper=1) faz uma convers�ｿｽo ADC
-		 if (get_modo_oper() == 1)
-		 {
-		 // dispara por software uma convers�ｿｽo ADC
-		 set_modo_oper(0);                // muda modo_oper p/ 0
-		 HAL_ADC_Start_IT(&hadc1);        // dispara ADC p/ convers�ｿｽo por IRQ
-		 }
 
-		 //tarefa #2: depois do IRQ ADC, converte para mVs (decimal, p/ 7-seg)
-		 if (get_modo_oper() == 2)            // entra qdo valor val_adc atualizado
-		 {
-		 // converter o valor lido em decimais p/ display
-		 miliVolt = val_adc * 3300 / 4095;
-		 uniADC = miliVolt / 1000;
-		 dezADC = (miliVolt - (uniADC * 1000)) / 100;
-		 cenADC = (miliVolt - (uniADC * 1000) - (dezADC * 100)) / 10;
-		 milADC = miliVolt - (uniADC * 1000) - (dezADC * 100) - (cenADC * 10);
-		 set_modo_oper(0);                // zera var modo_oper
-		 }
-
-		 // tarefa #3: qdo milis() > DELAY_VARRE ms, desde a �ｿｽltima mudan�ｿｽa
-		 if ((HAL_GetTick() - tIN_varre) > DT_VARRE)  // se ++0,1s atualiza o display
-		 {
-		 tIN_varre = HAL_GetTick();         // salva tIN p/ prox tempo varredura
-		 switch (sttVARRE)
-		 // teste e escolha de qual DIG vai varrer
-		 {
-		 case DIG_MILS:
-		 {
-		 sttVARRE = DIG_CENS;           // ajusta p/ prox digito
-		 serial_data = 0x0008;          // display #1
-		 val7seg = conv_7_seg(milADC);
-		 break;
-		 }
-		 case DIG_CENS:
-		 {
-		 sttVARRE = DIG_DEC;            // ajusta p/ prox digito
-		 serial_data = 0x00004;         // display #2
-		 if (cenADC > 0 || dezADC > 0 || uniADC > 0)
-		 {
-		 val7seg = conv_7_seg(cenADC);
-		 }
-		 else
-		 {
-		 val7seg = conv_7_seg(DIGITO_APAGADO);
-		 }
-		 break;
-		 }
-		 case DIG_DEC:
-		 {
-		 sttVARRE = DIG_UNI;            // ajusta p/ prox digito
-		 serial_data = 0x0002;          // display #3
-		 if (dezADC > 0 || uniADC > 0)
-		 {
-		 val7seg = conv_7_seg(dezADC);
-		 }
-		 else
-		 {
-		 val7seg = conv_7_seg(DIGITO_APAGADO);
-		 }
-		 break;
-		 }
-		 case DIG_UNI:
-		 {
-		 sttVARRE = DIG_MILS;           // ajusta p/ prox digito
-		 serial_data = 0x0001;          // display #3
-		 if (uniADC > 0)
-		 {
-		 val7seg = conv_7_seg(uniADC);
-		 val7seg &= 0x7FFF;            // liga o ponto decimal
-		 }
-		 else
-		 {
-		 val7seg = conv_7_seg(DIGITO_APAGADO);
-		 }
-		 break;
-		 }
-		 }  // fim case
-		 tIN_varre = HAL_GetTick();          // tmp atual em que fez essa varredura
-		 serial_data |= val7seg;              // OR com val7seg = dado a serializar
-		 serializar(serial_data);           // serializa dado p/74HC595 (shift reg)
-		 }  // -- fim da tarefa #3 - varredura do display
-		 */
 	}    // -- fim do loop infinito
 
 	/* USER CODE END 3 */
