@@ -36,6 +36,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f1xx_it.h"
+#include "stateMachine.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
@@ -60,6 +61,7 @@
 /* USER CODE BEGIN PV */
 volatile uint32_t modo_oper = 0;       // VAR modo_oper LOCAL
 volatile uint32_t tIN_IRQ1 = 0;        // tempo entrada na �ｿｽltima IRQ6
+volatile uint32_t tIN_IRQ3 = 0;        // tempo entrada na �ｿｽltima IRQ6
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -70,6 +72,7 @@ volatile uint32_t tIN_IRQ1 = 0;        // tempo entrada na �ｿｽltima IRQ6
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+e_state_machine stateMachine = CLOCK;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -215,7 +218,7 @@ void SysTick_Handler(void)
 /* please refer to the startup file (startup_stm32f1xx.s).                    */
 /******************************************************************************/
 
-/**
+/**aumenta numero do relogio
  * @brief This function handles EXTI line1 interrupt.
  */
 void EXTI1_IRQHandler(void)
@@ -241,8 +244,8 @@ void EXTI1_IRQHandler(void)
   /* USER CODE END EXTI1_IRQn 1 */
 }
 
-/**
- * @brief This function handles EXTI line2 interrupt.
+/** entra no modo de edicao de horas
+ *
  */
 void EXTI2_IRQHandler(void)
 {
@@ -255,13 +258,22 @@ void EXTI2_IRQHandler(void)
   /* USER CODE END EXTI2_IRQn 1 */
 }
 
-/**
- * @brief This function handles EXTI line3 interrupt.
+/** Altera modo de operacao e caso seja precionado por 3s zera relogio
+ *
  */
 void EXTI3_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI3_IRQn 0 */
-
+	if ((HAL_GetTick() - tIN_IRQ3) > DT_DEBOUNCING)
+	  {
+	    tIN_IRQ3 = HAL_GetTick();                // tIN (ms) da �ｿｽltima IRQ1
+	    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_3) == 0)
+	    {
+	      ++stateMachine;                          // incrementa modo opera�ｿｽ�ｿｽo
+	      if (stateMachine > LDR_NOT_LOCAL)
+	    	  stateMachine = 0;                          // se >MAX voltar modo_oper=0
+	    }
+	  }
   /* USER CODE END EXTI3_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
   /* USER CODE BEGIN EXTI3_IRQn 1 */
@@ -326,6 +338,36 @@ int get_modo_oper(void)
   // OBS: se�ｿｽ�ｿｽo cr�ｿｽtica, desabilitamos todas as IRQs p/ atualizar var
   __disable_irq();                     // desabilita IRQs
   x = modo_oper;                       // faz x = modo_oper
+  __enable_irq();                      // volta habilitar IRQs
+  return x;                            // retorna x (=modo_oper)
+}
+
+void set_state_machine(int m)
+{
+  // OBS: se�ｿｽ�ｿｽo cr�ｿｽtica, desabilitamos todas as IRQs p/ atualizar var
+  __disable_irq();                     // desabilita IRQs
+  if (m > LDR_NOT_LOCAL)                // se x maior MAX permitido
+  {
+    stateMachine = LDR_NOT_LOCAL;           // set apenas com max
+  }
+  else if (m < 0)                      // se x menor que 0
+  {
+	  stateMachine = 0;                       // set com 0
+  }
+  else                                // valor no intervalo 0-MAX
+  {
+	  stateMachine = m;                       // modifica modo_oper
+  }
+  __enable_irq();                      // volta habilitar IRQs
+}
+
+// fn que qpenas retorna o valor da var modo_oper
+int get_state_machine(void)
+{
+  static int x;                        // var local recebe modo_oper
+  // OBS: se�ｿｽ�ｿｽo cr�ｿｽtica, desabilitamos todas as IRQs p/ atualizar var
+  __disable_irq();                     // desabilita IRQs
+  x = stateMachine;                       // faz x = modo_oper
   __enable_irq();                      // volta habilitar IRQs
   return x;                            // retorna x (=modo_oper)
 }

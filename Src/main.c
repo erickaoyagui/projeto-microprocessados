@@ -51,6 +51,7 @@
 #include <stm32f1xx_hal_rcc.h>
 #include <stm32f1xx_hal_rcc_ex.h>
 #include <stm32f1xx_hal_uart.h>
+#include "stateMachine.h"
 #include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -60,10 +61,6 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
-typedef enum state_machine {
-	CLOCK, LDR_LOCAL, LDR_NOT_LOCAL
-} e_state_machine;
 
 typedef struct { // struct usado para guardar as variaveis de horas, minutos e segundos do relogio
 	int hours;
@@ -103,6 +100,8 @@ static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
 void set_modo_oper(int);             // seta modo_oper (no stm32f1xx_it.c)
 int get_modo_oper(void);             // obt�ｿｽm modo_oper (stm32f1xx_it.c)
+int get_state_machine(void);
+void set_state_machine(int);
 void reset_pin_GPIOs(void);         // reset pinos da SPI
 void serializar(int ser_data);       // prot fn serializa dados p/ 74HC595
 int16_t conv_7_seg(int NumHex);      // prot fn conv valor --> 7-seg
@@ -182,7 +181,8 @@ int main(void) {
 	static enum {
 		DIG_UNI, DIG_DEC, DIG_CENS, DIG_MILS
 	} sttVARRE = DIG_UNI;
-	e_state_machine stateMachine = CLOCK;
+
+
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -203,10 +203,9 @@ int main(void) {
 			dezMinutes = actualTime.minutes / 10;
 			uniSeconds = actualTime.seconds % 10;
 			dezSeconds = actualTime.seconds / 10;
-
 		}
 
-		switch (stateMachine) {
+		switch (get_state_machine()) {
 		case CLOCK:
 			if ((HAL_GetTick() - tIN_varre) > DT_VARRE) // se ++0,1s atualiza o display
 			{
