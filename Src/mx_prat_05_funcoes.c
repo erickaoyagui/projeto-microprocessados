@@ -16,6 +16,13 @@ Ordem dos bits no registrador de deslocamento:
 dp g f e d c b a 0 0 0 0 0 0 0 0       (fara' um OR no retorno)
 OBS: esta rotina nao liga  o DP...
  ----------------------------------------------------------------------------*/
+/*
+typedef struct { // struct usado para guardar as variaveis de horas, minutos e segundos do relogio
+	int hours;
+	int minutes;
+	int seconds;
+} aData;
+*/
 int16_t conv_7_seg(int NumHex)
 {
   int16_t sseg = 0xFF00;

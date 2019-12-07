@@ -59,7 +59,7 @@
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
 volatile uint32_t modo_oper = 0;       // VAR modo_oper LOCAL
-volatile uint32_t tIN_IRQ1 = 0;        // tempo entrada na �ltima IRQ6
+volatile uint32_t tIN_IRQ1 = 0;        // tempo entrada na �ｿｽltima IRQ6
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -225,10 +225,10 @@ void EXTI1_IRQHandler(void)
 
   if ((HAL_GetTick() - tIN_IRQ1) > DT_DEBOUNCING)
   {
-    tIN_IRQ1 = HAL_GetTick();                // tIN (ms) da �ltima IRQ1
+    tIN_IRQ1 = HAL_GetTick();                // tIN (ms) da �ｿｽltima IRQ1
     if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == 0)
     {
-      ++modo_oper;                          // incrementa modo opera��o
+      ++modo_oper;                          // incrementa modo opera�ｿｽ�ｿｽo
       if (modo_oper > MAX_MODO_OPER)
         modo_oper = 0;                          // se >MAX voltar modo_oper=0
     }
@@ -302,7 +302,7 @@ void USART1_IRQHandler(void)
 // fn que permite setar o valor da var modo_oper
 void set_modo_oper(int m)
 {
-  // OBS: se��o cr�tica, desabilitamos todas as IRQs p/ atualizar var
+  // OBS: se�ｿｽ�ｿｽo cr�ｿｽtica, desabilitamos todas as IRQs p/ atualizar var
   __disable_irq();                     // desabilita IRQs
   if (m > MAX_MODO_OPER)                // se x maior MAX permitido
   {
@@ -323,7 +323,7 @@ void set_modo_oper(int m)
 int get_modo_oper(void)
 {
   static int x;                        // var local recebe modo_oper
-  // OBS: se��o cr�tica, desabilitamos todas as IRQs p/ atualizar var
+  // OBS: se�ｿｽ�ｿｽo cr�ｿｽtica, desabilitamos todas as IRQs p/ atualizar var
   __disable_irq();                     // desabilita IRQs
   x = modo_oper;                       // faz x = modo_oper
   __enable_irq();                      // volta habilitar IRQs

@@ -12,12 +12,12 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="" id="com.atollic.truestudio.exe.debug.1518366166" name="Debug" parent="com.atollic.truestudio.exe.debug" postbuildStep="arm-atollic-eabi-objcopy -O ihex &quot;${BuildArtifactFileBaseName}.elf&quot; &quot;${BuildArtifactFileBaseName}.hex&quot;" prebuildStep="">
+				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="" id="com.atollic.truestudio.exe.debug.1518366166" name="Debug" parent="com.atollic.truestudio.exe.debug" postbuildStep="arm-atollic-eabi-objcopy.exe -O ihex &quot;${BuildArtifactFileBaseName}.elf&quot; &quot;${BuildArtifactFileBaseName}.hex&quot;" prebuildStep="">
 					<folderInfo id="com.atollic.truestudio.exe.debug.1518366166.2031504340" name="/" resourcePath="">
 						<toolChain id="com.atollic.truestudio.exe.debug.toolchain.683225115" name="Atollic ARM Tools" superClass="com.atollic.truestudio.exe.debug.toolchain">
-							<option id="com.atollic.truestudio.general.runtimelib.832112237" superClass="com.atollic.truestudio.general.runtimelib" value="com.atollic.truestudio.ld.general.clib.small" valueType="enumerated"/>
-							<option id="com.atollic.truestudio.toolchain_options.mcu.1689236880" superClass="com.atollic.truestudio.toolchain_options.mcu" value="STM32F103C8" valueType="string"/>
-							<option id="com.atollic.truestudio.toolchain_options.vendor.1875796513" superClass="com.atollic.truestudio.toolchain_options.vendor" value="STMicroelectronics" valueType="string"/>
+							<option id="com.atollic.truestudio.general.runtimelib.494040249" superClass="com.atollic.truestudio.general.runtimelib" value="com.atollic.truestudio.ld.general.clib.small" valueType="enumerated"/>
+							<option id="com.atollic.truestudio.toolchain_options.mcu.157490497" superClass="com.atollic.truestudio.toolchain_options.mcu" value="STM32F103C8" valueType="string"/>
+							<option id="com.atollic.truestudio.toolchain_options.vendor.1267884539" superClass="com.atollic.truestudio.toolchain_options.vendor" value="STMicroelectronics" valueType="string"/>
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="com.atollic.truestudio.exe.debug.toolchain.platform.2054752829" isAbstract="false" name="Debug platform" superClass="com.atollic.truestudio.exe.debug.toolchain.platform"/>
 							<builder buildPath="${workspace_loc:/final_project}/Debug" id="com.atollic.truestudio.mbs.builder1.1222194476" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="CDT Internal Builder" superClass="com.atollic.truestudio.mbs.builder1">
 								<outputEntries>
@@ -45,8 +45,8 @@
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
 								</option>
 								<option id="com.atollic.truestudio.gcc.symbols.defined.1670122205" name="Defined symbols" superClass="com.atollic.truestudio.gcc.symbols.defined" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="__weak=&quot;__attribute__((weak))&quot;"/>
-									<listOptionValue builtIn="false" value="__packed=&quot;__attribute__((__packed__))&quot;"/>
+									<listOptionValue builtIn="false" value="__weak=__attribute__((weak))"/>
+									<listOptionValue builtIn="false" value="__packed=__attribute__((__packed__))"/>
 									<listOptionValue builtIn="false" value="USE_HAL_DRIVER"/>
 									<listOptionValue builtIn="false" value="STM32F103xB"/>
 								</option>
@@ -87,8 +87,8 @@
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
 								</option>
 								<option id="com.atollic.truestudio.gpp.symbols.defined.1619552487" name="Defined symbols" superClass="com.atollic.truestudio.gpp.symbols.defined" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="__weak=&quot;__attribute__((weak))&quot;"/>
-									<listOptionValue builtIn="false" value="__packed=&quot;__attribute__((__packed__))&quot;"/>
+									<listOptionValue builtIn="false" value="__weak=__attribute__((weak))"/>
+									<listOptionValue builtIn="false" value="__packed=__attribute__((__packed__))"/>
 									<listOptionValue builtIn="false" value="USE_HAL_DRIVER"/>
 									<listOptionValue builtIn="false" value="STM32F103xB"/>
 								</option>
@@ -114,7 +114,7 @@
 								<option id="com.atollic.truestudio.common_options.target.fpucore.1297069055" name="FPU" superClass="com.atollic.truestudio.common_options.target.fpucore" value="com.atollic.truestudio.common_options.target.fpucore.None" valueType="enumerated"/>
 							</tool>
 							<tool id="com.atollic.truestudio.exe.debug.toolchain.secoutput.839033486" name="Other" superClass="com.atollic.truestudio.exe.debug.toolchain.secoutput"/>
-							<tool id="com.atollic.truestudio.ar.base.2140655863" name="Archiver" superClass="com.atollic.truestudio.ar.base"/>
+							<tool id="com.atollic.truestudio.ar.base.1403162328" name="Archiver" superClass="com.atollic.truestudio.ar.base"/>
 						</toolChain>
 					</folderInfo>
 					<fileInfo id="com.atollic.truestudio.exe.debug.311825581.983937533" name="" rcbsApplicability="disable" resourcePath="nofile" toolsToInvoke="com.atollic.truestudio.exe.debug.toolchain.gcc.1836874447.1976695455">
@@ -144,12 +144,12 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="" id="com.atollic.truestudio.configuration.release.1518366166" name="Release" parent="com.atollic.truestudio.configuration.release" postbuildStep="arm-atollic-eabi-objcopy -O ihex &quot;${BuildArtifactFileBaseName}.elf&quot; &quot;${BuildArtifactFileBaseName}.hex&quot;" prebuildStep="">
+				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="" id="com.atollic.truestudio.configuration.release.1518366166" name="Release" parent="com.atollic.truestudio.configuration.release" postbuildStep="arm-atollic-eabi-objcopy.exe -O ihex &quot;${BuildArtifactFileBaseName}.elf&quot; &quot;${BuildArtifactFileBaseName}.hex&quot;" prebuildStep="">
 					<folderInfo id="com.atollic.truestudio.configuration.release.1518366166.2031504340" name="/" resourcePath="">
 						<toolChain id="com.atollic.truestudio.exe.release.toolchain.683225115" name="Atollic ARM Tools" superClass="com.atollic.truestudio.exe.release.toolchain">
-							<option id="com.atollic.truestudio.general.runtimelib.399044272" superClass="com.atollic.truestudio.general.runtimelib" value="com.atollic.truestudio.ld.general.clib.small" valueType="enumerated"/>
-							<option id="com.atollic.truestudio.toolchain_options.mcu.1320233397" superClass="com.atollic.truestudio.toolchain_options.mcu" value="STM32F103C8" valueType="string"/>
-							<option id="com.atollic.truestudio.toolchain_options.vendor.2042938981" superClass="com.atollic.truestudio.toolchain_options.vendor" value="STMicroelectronics" valueType="string"/>
+							<option id="com.atollic.truestudio.general.runtimelib.436209788" superClass="com.atollic.truestudio.general.runtimelib" value="com.atollic.truestudio.ld.general.clib.small" valueType="enumerated"/>
+							<option id="com.atollic.truestudio.toolchain_options.mcu.979144383" superClass="com.atollic.truestudio.toolchain_options.mcu" value="STM32F103C8" valueType="string"/>
+							<option id="com.atollic.truestudio.toolchain_options.vendor.694171798" superClass="com.atollic.truestudio.toolchain_options.vendor" value="STMicroelectronics" valueType="string"/>
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="com.atollic.truestudio.exe.release.toolchain.platform.2054752829" isAbstract="false" name="Release platform" superClass="com.atollic.truestudio.exe.release.toolchain.platform"/>
 							<builder buildPath="${workspace_loc:/final_project}/Release" id="com.atollic.truestudio.mbs.builder1.1222194476" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="CDT Internal Builder" superClass="com.atollic.truestudio.mbs.builder1">
 								<outputEntries>
@@ -177,8 +177,8 @@
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
 								</option>
 								<option id="com.atollic.truestudio.gcc.symbols.defined.1670122205" name="Defined symbols" superClass="com.atollic.truestudio.gcc.symbols.defined" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="__weak=&quot;__attribute__((weak))&quot;"/>
-									<listOptionValue builtIn="false" value="__packed=&quot;__attribute__((__packed__))&quot;"/>
+									<listOptionValue builtIn="false" value="__weak=__attribute__((weak))"/>
+									<listOptionValue builtIn="false" value="__packed=__attribute__((__packed__))"/>
 									<listOptionValue builtIn="false" value="USE_HAL_DRIVER"/>
 									<listOptionValue builtIn="false" value="STM32F103xB"/>
 								</option>
@@ -219,8 +219,8 @@
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
 								</option>
 								<option id="com.atollic.truestudio.gpp.symbols.defined.1619552487" name="Defined symbols" superClass="com.atollic.truestudio.gpp.symbols.defined" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="__weak=&quot;__attribute__((weak))&quot;"/>
-									<listOptionValue builtIn="false" value="__packed=&quot;__attribute__((__packed__))&quot;"/>
+									<listOptionValue builtIn="false" value="__weak=__attribute__((weak))"/>
+									<listOptionValue builtIn="false" value="__packed=__attribute__((__packed__))"/>
 									<listOptionValue builtIn="false" value="USE_HAL_DRIVER"/>
 									<listOptionValue builtIn="false" value="STM32F103xB"/>
 								</option>
@@ -246,7 +246,7 @@
 								<option id="com.atollic.truestudio.common_options.target.fpucore.1297069055" name="FPU" superClass="com.atollic.truestudio.common_options.target.fpucore" value="com.atollic.truestudio.common_options.target.fpucore.None" valueType="enumerated"/>
 							</tool>
 							<tool id="com.atollic.truestudio.exe.release.toolchain.secoutput.839033486" name="Other" superClass="com.atollic.truestudio.exe.release.toolchain.secoutput"/>
-							<tool id="com.atollic.truestudio.ar.base.282453714" name="Archiver" superClass="com.atollic.truestudio.ar.base"/>
+							<tool id="com.atollic.truestudio.ar.base.635219882" name="Archiver" superClass="com.atollic.truestudio.ar.base"/>
 						</toolChain>
 					</folderInfo>
 					<fileInfo id="com.atollic.truestudio.exe.release.311825581.983937533" name="" rcbsApplicability="disable" resourcePath="nofile" toolsToInvoke="com.atollic.truestudio.exe.release.toolchain.gcc.1836874447.1976695455">

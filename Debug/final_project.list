@@ -21,23 +21,23 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
   8 .ARM.attributes 00000029  00000000  00000000  0002000c  2**0
                   CONTENTS, READONLY
-  9 .debug_info   0001055d  00000000  00000000  00020035  2**0
+  9 .debug_info   000105a7  00000000  00000000  00020035  2**0
                   CONTENTS, READONLY, DEBUGGING
- 10 .debug_abbrev 000026b5  00000000  00000000  00030592  2**0
+ 10 .debug_abbrev 000026d5  00000000  00000000  000305dc  2**0
                   CONTENTS, READONLY, DEBUGGING
- 11 .debug_loc    00003cfd  00000000  00000000  00032c47  2**0
+ 11 .debug_loc    00003cfd  00000000  00000000  00032cb1  2**0
                   CONTENTS, READONLY, DEBUGGING
- 12 .debug_aranges 00000710  00000000  00000000  00036948  2**3
+ 12 .debug_aranges 00000710  00000000  00000000  000369b0  2**3
                   CONTENTS, READONLY, DEBUGGING
- 13 .debug_ranges 000008f8  00000000  00000000  00037058  2**3
+ 13 .debug_ranges 000008f8  00000000  00000000  000370c0  2**3
                   CONTENTS, READONLY, DEBUGGING
- 14 .debug_line   000049d6  00000000  00000000  00037950  2**0
+ 14 .debug_line   00004b26  00000000  00000000  000379b8  2**0
                   CONTENTS, READONLY, DEBUGGING
- 15 .debug_str    00002966  00000000  00000000  0003c326  2**0
+ 15 .debug_str    000029b1  00000000  00000000  0003c4de  2**0
                   CONTENTS, READONLY, DEBUGGING
- 16 .comment      0000007c  00000000  00000000  0003ec8c  2**0
+ 16 .comment      0000007c  00000000  00000000  0003ee8f  2**0
                   CONTENTS, READONLY
- 17 .debug_frame  00001274  00000000  00000000  0003ed08  2**2
+ 17 .debug_frame  00001274  00000000  00000000  0003ef0c  2**2
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -105,7 +105,7 @@ __weak HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)
     HAL_NVIC_SetPriority(SysTick_IRQn, TickPriority, 0U);
  8000170:	4602      	mov	r2, r0
  8000172:	4629      	mov	r1, r5
- 8000174:	f04f 30ff 	mov.w	r0, #4294967295	; 0xffffffff
+ 8000174:	f04f 30ff 	mov.w	r0, #4294967295
  8000178:	f000 fa82 	bl	8000680 <HAL_NVIC_SetPriority>
     uwTickPrio = TickPriority;
  800017c:	4b04      	ldr	r3, [pc, #16]	; (8000190 <HAL_InitTick+0x44>)
@@ -1055,7 +1055,7 @@ void HAL_NVIC_SetPriority(IRQn_Type IRQn, uint32_t PreemptPriority, uint32_t Sub
  800069e:	2400      	movls	r4, #0
            ((PreemptPriority & (uint32_t)((1UL << (PreemptPriorityBits)) - 1UL)) << SubPriorityBits) |
  80006a0:	fa05 f303 	lsl.w	r3, r5, r3
- 80006a4:	f103 33ff 	add.w	r3, r3, #4294967295	; 0xffffffff
+ 80006a4:	f103 33ff 	add.w	r3, r3, #4294967295
   SubPriorityBits     = ((PriorityGroupTmp + (uint32_t)(__NVIC_PRIO_BITS)) < (uint32_t)7UL) ? (uint32_t)0UL : (uint32_t)((PriorityGroupTmp - 7UL) + (uint32_t)(__NVIC_PRIO_BITS));
  80006a8:	bf88      	it	hi
  80006aa:	3c03      	subhi	r4, #3
@@ -3664,7 +3664,7 @@ void serializar(int ser_data)
  80016a2:	f7ff f971 	bl	8000988 <HAL_GPIO_WritePin>
     stts--;
   } while (stts>=0);
- 80016a6:	f114 34ff 	adds.w	r4, r4, #4294967295	; 0xffffffff
+ 80016a6:	f114 34ff 	adds.w	r4, r4, #4294967295
  80016aa:	d2e5      	bcs.n	8001678 <serializar+0x8>
 	// depois de serializar tudo, tem que gerar RCK
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);      // RCK=1
