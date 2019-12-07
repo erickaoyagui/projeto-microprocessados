@@ -1,0 +1,83 @@
+Skip to content
+Search or jump to…
+
+Pull requests
+Issues
+Marketplace
+Explore
+ 
+@vhcleite 
+2.9k
+92.6k47.6kgithub/gitignore
+ Code Pull requests 121 Actions Projects 0 Security Insights
+gitignore/C.gitignore
+@chaosdefinition chaosdefinition Update C.gitignore
+f76d089 on 31 Oct 2016
+@rye@dashed@Leandros@snisarg@dybekm@eugpermar@starrify@chaosdefinition@arsenm
+52 lines (44 sloc)  430 Bytes
+ 
+# Prerequisites
+*.d
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+© 2019 GitHub, Inc.
+Terms
+Privacy
+Security
+Status
+Help
+Contact GitHub
+Pricing
+API
+Training
+Blog
+About
+
