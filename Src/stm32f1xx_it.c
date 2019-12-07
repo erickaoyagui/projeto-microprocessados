@@ -48,8 +48,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define MAX_MODO_OPER 2                // kte p/ testar val max modo_oper
 #define DT_DEBOUNCING 250              // tempo delay para debouncing
+#define MAX_MODO_OPER 2                // kte p/ testar val max modo_oper
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -59,7 +59,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-volatile uint32_t modo_oper = 0;       // VAR modo_oper LOCAL
+volatile uint32_t modo_oper = 1;       // VAR modo_oper LOCAL
 volatile uint32_t tIN_IRQ1 = 0;        // tempo entrada na �ｿｽltima IRQ6
 volatile uint32_t tIN_IRQ3 = 0;        // tempo entrada na �ｿｽltima IRQ6
 /* USER CODE END PV */
@@ -226,16 +226,6 @@ void EXTI1_IRQHandler(void)
   /* USER CODE BEGIN EXTI1_IRQn 0 */
   /* USER CODE BEGIN EXTI1_IRQn 0 */
 
-  if ((HAL_GetTick() - tIN_IRQ1) > DT_DEBOUNCING)
-  {
-    tIN_IRQ1 = HAL_GetTick();                // tIN (ms) da �ｿｽltima IRQ1
-    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == 0)
-    {
-      ++modo_oper;                          // incrementa modo opera�ｿｽ�ｿｽo
-      if (modo_oper > MAX_MODO_OPER)
-        modo_oper = 0;                          // se >MAX voltar modo_oper=0
-    }
-  }
   /* USER CODE END EXTI1_IRQn 0 */
   /* USER CODE END EXTI1_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
@@ -270,10 +260,13 @@ void EXTI3_IRQHandler(void)
 	    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_3) == 0)
 	    {
 	      ++stateMachine;                          // incrementa modo opera�ｿｽ�ｿｽo
+	      if (stateMachine == LDR_LOCAL)
+	    	  set_modo_oper(1);
 	      if (stateMachine > LDR_NOT_LOCAL)
 	    	  stateMachine = 0;                          // se >MAX voltar modo_oper=0
 	    }
 	  }
+
   /* USER CODE END EXTI3_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
   /* USER CODE BEGIN EXTI3_IRQn 1 */
@@ -312,6 +305,8 @@ void USART1_IRQHandler(void)
 /* USER CODE BEGIN 1 */
 /* USER CODE BEGIN 1 */
 // fn que permite setar o valor da var modo_oper
+
+
 void set_modo_oper(int m)
 {
   // OBS: se�ｿｽ�ｿｽo cr�ｿｽtica, desabilitamos todas as IRQs p/ atualizar var
@@ -346,6 +341,7 @@ void set_state_machine(int m)
 {
   // OBS: se�ｿｽ�ｿｽo cr�ｿｽtica, desabilitamos todas as IRQs p/ atualizar var
   __disable_irq();                     // desabilita IRQs
+
   if (m > LDR_NOT_LOCAL)                // se x maior MAX permitido
   {
     stateMachine = LDR_NOT_LOCAL;           // set apenas com max
