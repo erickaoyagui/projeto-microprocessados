@@ -125,6 +125,13 @@ void verifyTime(aData *myTime) { // Se souber colocar em outro arquivo .c ajudar
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 int16_t val_adc = 0;                 // var global: valor lido no ADC
+
+void resetClockTimer(aData * actualTime) {
+  actualTime->seconds = 0;
+  actualTime->minutes = 0;
+  actualTime->hours = 0;
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -187,11 +194,23 @@ int main(void) {
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
+	  volatile uint32_t timerResetRelogio = 0;
 
 	while (1) {
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
+	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_3) == 0) {
+	    if (HAL_GetTick() - timerResetRelogio > 3000) {
+	      timerResetRelogio = HAL_GetTick();
+	      set_state_machine(CLOCK);
+	      resetClockTimer(&actualTime);
+	    }
+	  } else {
+	    timerResetRelogio = HAL_GetTick();
+	  }
+
+
 		if ((HAL_GetTick() - tIN_relogio) > SEGUNDO) {
 			tIN_relogio = HAL_GetTick();
 			actualTime.seconds++;
