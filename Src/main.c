@@ -75,6 +75,7 @@ typedef struct { // struct usado para guardar as variaveis de horas, minutos e s
 #define DT_VARRE  5             // inc varredura a cada 5 ms (~200 Hz)
 #define DIGITO_APAGADO 0x10    // kte valor p/ apagar um d�ｿｽgito no display
 #define SEGUNDO 100
+#define RESET_CLOCK_TIME 3000
 
 /* USER CODE END PD */
 
@@ -203,17 +204,20 @@ int main(void) {
 
 		/* USER CODE BEGIN 3 */
 
-		  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_3) == 0) {
-		    if (HAL_GetTick() - timerResetRelogio > 3000) {
-		      timerResetRelogio = HAL_GetTick();
-		      set_state_machine(CLOCK);
-		      resetClockTimer(&actualTime);
-		    }
-		  } else {
-		    timerResetRelogio = HAL_GetTick();
-		  }
+	  // Verifica se deve reiniciar contagem do relógio
+	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_3) == 0) {
+	    if (HAL_GetTick() - timerResetRelogio > RESET_CLOCK_TIME) {
+	      timerResetRelogio = HAL_GetTick();
+	      set_state_machine(CLOCK);
+	      resetClockTimer(&actualTime);
+	    }
+	  } else {
+	    timerResetRelogio = HAL_GetTick();
+	  }
+
 		// RELOGIO
 		if ((HAL_GetTick() - tIN_relogio) > SEGUNDO) {
+
 			tIN_relogio = HAL_GetTick();
 			actualTime.seconds++;
 			HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_15);
@@ -226,35 +230,25 @@ int main(void) {
 			dezSeconds = actualTime.seconds / 10;
 		}
 
-	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_3) == 0) {
-	    if (HAL_GetTick() - timerResetRelogio > 3000) {
-	      timerResetRelogio = HAL_GetTick();
-	      set_state_machine(CLOCK);
-	      resetClockTimer(&actualTime);
-	    }
-	  } else {
-	    timerResetRelogio = HAL_GetTick();
-	  }
-
 		// CONVERSOR
-		// tarefa #1: se (modo_oper=1) faz uma convers�ｿｽo ADC
+		// tarefa #1: se (modo_oper=1) faz uma conversao ADC
 		if (get_modo_oper() == 1) {
-			// dispara por software uma convers�ｿｽo ADC
-			set_modo_oper(0);                // muda modo_oper p/ 0
-			HAL_ADC_Start_IT(&hadc1);  // dispara ADC p/ convers�ｿｽo por IRQ
+		  // dispara por software uma conversao ADC
+		  set_modo_oper(0);                // muda modo_oper p/ 0
+		  HAL_ADC_Start_IT(&hadc1);  // dispara ADC p/ conversao por IRQ
 		}
 
 		//tarefa #2: depois do IRQ ADC, converte para mVs (decimal, p/ 7-seg)
 		if (get_modo_oper() == 2)      // entra qdo valor val_adc atualizado
-				{
-			// converter o valor lido em decimais p/ display
-			miliVolt = val_adc * 3300 / 4095;
-			uniADC = miliVolt / 1000;
-			dezADC = (miliVolt - (uniADC * 1000)) / 100;
-			cenADC = (miliVolt - (uniADC * 1000) - (dezADC * 100)) / 10;
-			milADC = miliVolt - (uniADC * 1000) - (dezADC * 100)
-					- (cenADC * 10);
-			set_modo_oper(0);                // zera var modo_oper
+		{
+		  // converter o valor lido em decimais p/ display
+		  miliVolt = val_adc * 3300 / 4095;
+		  uniADC = miliVolt / 1000;
+		  dezADC = (miliVolt - (uniADC * 1000)) / 100;
+		  cenADC = (miliVolt - (uniADC * 1000) - (dezADC * 100)) / 10;
+		  milADC = miliVolt - (uniADC * 1000) - (dezADC * 100)
+					    - (cenADC * 10);
+		  set_modo_oper(0);                // zera var modo_oper
 		}
 
 		switch (get_state_machine()) {
