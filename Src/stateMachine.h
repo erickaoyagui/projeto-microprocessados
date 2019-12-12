@@ -11,7 +11,8 @@
 typedef enum state_machine {
 	CLOCK,
 	LDR_LOCAL,
-	LDR_NOT_LOCAL
+	LDR_NOT_LOCAL,
+	MAX_STATE
 } e_state_machine;
 
 #endif /* STATEMACHINE_H_ */

@@ -259,11 +259,13 @@ void EXTI3_IRQHandler(void)
 	    tIN_IRQ3 = HAL_GetTick();                // tIN (ms) da �ｿｽltima IRQ1
 	    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_3) == 0)
 	    {
-	      ++stateMachine;                          // incrementa modo opera�ｿｽ�ｿｽo
-	      if (stateMachine == LDR_LOCAL)
-	    	  set_modo_oper(1);
-	      if (stateMachine > LDR_NOT_LOCAL)
-	    	  stateMachine = 0;                          // se >MAX voltar modo_oper=0
+	      ++stateMachine;
+	      if (stateMachine == LDR_LOCAL) {
+	        set_modo_oper(1);
+	      }
+	      if (stateMachine >= MAX_STATE) {
+	        stateMachine = 0;                          // se >MAX voltar modo_oper=0
+	      }
 	    }
 	  }
 
