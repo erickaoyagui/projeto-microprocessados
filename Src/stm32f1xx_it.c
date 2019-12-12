@@ -37,6 +37,7 @@
 #include "main.h"
 #include "stm32f1xx_it.h"
 #include "stateMachine.h"
+#include "e_adc_state.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
@@ -59,7 +60,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-volatile uint32_t modo_oper = 1;       // VAR modo_oper LOCAL
+volatile uint32_t adcState = 1;       // VAR modo_oper LOCAL
 volatile uint32_t tIN_IRQ1 = 0;        // tempo entrada na �ｿｽltima IRQ6
 volatile uint32_t tIN_IRQ3 = 0;        // tempo entrada na �ｿｽltima IRQ6
 /* USER CODE END PV */
@@ -261,7 +262,7 @@ void EXTI3_IRQHandler(void)
 	    {
 	      ++stateMachine;
 	      if (stateMachine == LDR_LOCAL) {
-	        set_modo_oper(1);
+	        setAdcState(ADC_STATE_SHOOT_ADC_CONVERSION);
 	      }
 	      if (stateMachine >= MAX_STATE) {
 	        stateMachine = 0;                          // se >MAX voltar modo_oper=0
@@ -309,34 +310,34 @@ void USART1_IRQHandler(void)
 // fn que permite setar o valor da var modo_oper
 
 
-void set_modo_oper(int m)
+void setAdcState(eAdcState state)
 {
   // OBS: se�ｿｽ�ｿｽo cr�ｿｽtica, desabilitamos todas as IRQs p/ atualizar var
   __disable_irq();                     // desabilita IRQs
-  if (m > MAX_MODO_OPER)                // se x maior MAX permitido
+  if (state > ADC_STATE_MAX_STATE)                // se x maior MAX permitido
   {
-    modo_oper = MAX_MODO_OPER;           // set apenas com max
+    adcState = ADC_STATE_MAX_STATE - 1;           // set apenas com max
   }
-  else if (m < 0)                      // se x menor que 0
+  else if (state < ADC_STATE_IDLE)                      // se x menor que 0
   {
-    modo_oper = 0;                       // set com 0
+    adcState = ADC_STATE_IDLE;                       // set com 0
   }
   else                                // valor no intervalo 0-MAX
   {
-    modo_oper = m;                       // modifica modo_oper
+    adcState = state;                       // modifica adcState
   }
   __enable_irq();                      // volta habilitar IRQs
 }
 
-// fn que qpenas retorna o valor da var modo_oper
-int get_modo_oper(void)
+// fn que qpenas retorna o valor da var adcState
+eAdcState getAdcState(void)
 {
   static int x;                        // var local recebe modo_oper
   // OBS: se�ｿｽ�ｿｽo cr�ｿｽtica, desabilitamos todas as IRQs p/ atualizar var
   __disable_irq();                     // desabilita IRQs
-  x = modo_oper;                       // faz x = modo_oper
+  x = adcState;                       // faz x = adcState
   __enable_irq();                      // volta habilitar IRQs
-  return x;                            // retorna x (=modo_oper)
+  return x;                            // retorna x (=adcState)
 }
 
 void set_state_machine(int m)
@@ -354,18 +355,18 @@ void set_state_machine(int m)
   }
   else                                // valor no intervalo 0-MAX
   {
-	  stateMachine = m;                       // modifica modo_oper
+	  stateMachine = m;                       // modifica adcState
   }
   __enable_irq();                      // volta habilitar IRQs
 }
 
-// fn que qpenas retorna o valor da var modo_oper
+// fn que qpenas retorna o valor da var adcState
 int get_state_machine(void)
 {
   static int x;                        // var local recebe modo_oper
   // OBS: se�ｿｽ�ｿｽo cr�ｿｽtica, desabilitamos todas as IRQs p/ atualizar var
   __disable_irq();                     // desabilita IRQs
-  x = stateMachine;                       // faz x = modo_oper
+  x = stateMachine;                       // faz x = adcState
   __enable_irq();                      // volta habilitar IRQs
   return x;                            // retorna x (=modo_oper)
 }

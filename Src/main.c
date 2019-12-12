@@ -52,6 +52,7 @@
 #include <stm32f1xx_hal_rcc_ex.h>
 #include <stm32f1xx_hal_uart.h>
 #include "stateMachine.h"
+#include "e_adc_state.h"
 #include <string.h>
 #include "main.h"
 
@@ -111,8 +112,8 @@ static void MX_ADC1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
-void set_modo_oper(int);             // seta modo_oper (no stm32f1xx_it.c)
-int get_modo_oper(void);             // obt�ｿｽm modo_oper (stm32f1xx_it.c)
+void setAdcState(int);             // seta modo_oper (no stm32f1xx_it.c)
+int getAdcState(void);             // obt�ｿｽm modo_oper (stm32f1xx_it.c)
 int get_state_machine(void);
 void set_state_machine(int);
 void reset_pin_GPIOs(void);         // reset pinos da SPI
@@ -134,7 +135,7 @@ void verifyTime(aData *myTime) {
 		myTime->minutes = 0;
 	}
 	if (myTime->seconds >= 60) {
-		set_modo_oper(1);
+		setAdcState(1);
 		myTime->minutes++;
 		myTime->seconds = 0;
 	}
@@ -276,7 +277,7 @@ int main(void) {
         if(isChecksumCorrect(receiveBuffer, calculateChecksum(receiveBuffer))) {
           val_adc = getADCValueFromBuffer(receiveBuffer);
           //Indica que dado pode ser convertido para mV e pode ser colocado no display
-          set_modo_oper(2);
+          setAdcState(ADC_STATE_CONVERT_TO_MILI_VOLTS);
           transmitCounter = 0;
           hasDataToDisplay = TRUE;
         } else {
@@ -291,14 +292,14 @@ int main(void) {
 
 	  // CONVERSOR
 	  // tarefa #1: se (modo_oper=1) faz uma conversao ADC
-	  if (get_modo_oper() == 1) {
+	  if (getAdcState() == ADC_STATE_SHOOT_ADC_CONVERSION) {
 	    // dispara por software uma conversao ADC
-	    set_modo_oper(0);                // muda modo_oper p/ 0
+	    setAdcState(ADC_STATE_IDLE);
 	    HAL_ADC_Start_IT(&hadc1);  // dispara ADC p/ conversao por IRQ
 	  }
 
 	  //tarefa #2: depois do IRQ ADC, converte para mVs (decimal, p/ 7-seg)
-	  if (get_modo_oper() == 2)      // entra qdo valor val_adc atualizado
+	  if (getAdcState() == ADC_STATE_CONVERT_TO_MILI_VOLTS)      // entra qdo valor val_adc atualizado
 	  {
 	    // converter o valor lido em decimais p/ display
 	    miliVolt = val_adc * 3300 / 4095;
@@ -307,7 +308,7 @@ int main(void) {
 	    cenADC = (miliVolt - (uniADC * 1000) - (dezADC * 100)) / 10;
 	    milADC = miliVolt - (uniADC * 1000) - (dezADC * 100)
 					        - (cenADC * 10);
-	    set_modo_oper(0);                // zera var modo_oper
+	    setAdcState(ADC_STATE_IDLE);                // zera var modo_oper
 	  }
 
 
@@ -694,7 +695,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
 	if (hadc->Instance == ADC1) {
 		val_adc = HAL_ADC_GetValue(&hadc1);  // capta valor adc
-		set_modo_oper(2);
+		setAdcState(2);
 		;                  // alterou valor lido
 	}
 }
