@@ -60,7 +60,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-volatile uint32_t adcState = ADC_STATE_SHOOT_ADC_CONVERSION;       // VAR modo_oper LOCAL
+volatile eAdcState adcState = ADC_STATE_SHOOT_ADC_CONVERSION;       // VAR modo_oper LOCAL
 volatile uint32_t tIN_IRQ1 = 0;        // tempo entrada na �ｿｽltima IRQ6
 volatile uint32_t tIN_IRQ3 = 0;        // tempo entrada na �ｿｽltima IRQ6
 /* USER CODE END PV */
@@ -73,7 +73,7 @@ volatile uint32_t tIN_IRQ3 = 0;        // tempo entrada na �ｿｽltima IRQ6
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-e_state_machine stateMachine = CLOCK;
+eMachineState machineState = MACHINE_STATE_CLOCK;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -260,12 +260,12 @@ void EXTI3_IRQHandler(void)
 	    tIN_IRQ3 = HAL_GetTick();                // tIN (ms) da �ｿｽltima IRQ1
 	    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_3) == 0)
 	    {
-	      ++stateMachine;
-	      if (stateMachine == LDR_LOCAL) {
+	      ++machineState;
+	      if (machineState == MACHINE_STATE_LDR_LOCAL) {
 	        setAdcState(ADC_STATE_SHOOT_ADC_CONVERSION);
 	      }
-	      if (stateMachine >= MAX_STATE) {
-	        stateMachine = 0;                          // se >MAX voltar modo_oper=0
+	      if (machineState >= MACHINE_STATE_MAX_STATE) {
+	        machineState = MACHINE_STATE_CLOCK;
 	      }
 	    }
 	  }
@@ -312,7 +312,7 @@ void USART1_IRQHandler(void)
 
 void setAdcState(eAdcState state)
 {
-  // OBS: se�ｿｽ�ｿｽo cr�ｿｽtica, desabilitamos todas as IRQs p/ atualizar var
+  // OBS: sessao critica, desabilitamos todas as IRQs p/ atualizar var
   __disable_irq();                     // desabilita IRQs
   if (state > ADC_STATE_MAX_STATE)                // se x maior MAX permitido
   {
@@ -340,33 +340,33 @@ eAdcState getAdcState(void)
   return x;                            // retorna x (=adcState)
 }
 
-void set_state_machine(int m)
+void setMachineState(eMachineState state)
 {
-  // OBS: se�ｿｽ�ｿｽo cr�ｿｽtica, desabilitamos todas as IRQs p/ atualizar var
+  // OBS: sessao critica, desabilitamos todas as IRQs p/ atualizar var
   __disable_irq();                     // desabilita IRQs
 
-  if (m > LDR_NOT_LOCAL)                // se x maior MAX permitido
+  if (state > MACHINE_STATE_LDR_NOT_LOCAL)                // se x maior MAX permitido
   {
-    stateMachine = LDR_NOT_LOCAL;           // set apenas com max
+    machineState = MACHINE_STATE_LDR_NOT_LOCAL;           // set apenas com max
   }
-  else if (m < 0)                      // se x menor que 0
+  else if (state < MACHINE_STATE_CLOCK)                      // se x menor que 0
   {
-	  stateMachine = 0;                       // set com 0
+	  machineState = MACHINE_STATE_CLOCK;                       // set com 0
   }
   else                                // valor no intervalo 0-MAX
   {
-	  stateMachine = m;                       // modifica adcState
+	  machineState = state;                       // modifica adcState
   }
   __enable_irq();                      // volta habilitar IRQs
 }
 
 // fn que qpenas retorna o valor da var adcState
-int get_state_machine(void)
+eMachineState getMachineState(void)
 {
   static int x;                        // var local recebe modo_oper
   // OBS: se�ｿｽ�ｿｽo cr�ｿｽtica, desabilitamos todas as IRQs p/ atualizar var
   __disable_irq();                     // desabilita IRQs
-  x = stateMachine;                       // faz x = adcState
+  x = machineState;                       // faz x = adcState
   __enable_irq();                      // volta habilitar IRQs
   return x;                            // retorna x (=modo_oper)
 }

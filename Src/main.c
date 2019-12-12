@@ -94,7 +94,7 @@ typedef struct { // struct usado para guardar as variaveis de horas, minutos e s
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
-int receivedFlag = FALSE,
+volatile int receivedFlag = FALSE,
     transmitFlag = TRUE,
     hasDataToDisplay = FALSE;
 
@@ -114,8 +114,8 @@ static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
 void setAdcState(int);             // seta modo_oper (no stm32f1xx_it.c)
 int getAdcState(void);             // obt�ｿｽm modo_oper (stm32f1xx_it.c)
-int get_state_machine(void);
-void set_state_machine(int);
+int getMachineState(void);
+void setMachineState(int);
 void reset_pin_GPIOs(void);         // reset pinos da SPI
 void serializar(int ser_data);       // prot fn serializa dados p/ 74HC595
 int16_t conv_7_seg(int NumHex);      // prot fn conv valor --> 7-seg
@@ -238,10 +238,10 @@ int main(void) {
 	  /* USER CODE BEGIN 3 */
 
 	  // Verifica se deve reiniciar contagem do relógio
-	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_3) == 0) {
+	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_3) == GPIO_PIN_RESET) {
 	    if (HAL_GetTick() - resetClockTimer > RESET_CLOCK_TIME) {
 	      resetClockTimer = HAL_GetTick();
-	      set_state_machine(CLOCK);
+	      setMachineState(MACHINE_STATE_CLOCK);
 	      resetClockStTimer(&actualTime);
 	    }
 	  } else {
@@ -312,8 +312,8 @@ int main(void) {
 	  }
 
 
-		switch (get_state_machine()) {
-		case CLOCK:
+		switch (getMachineState()) {
+		case MACHINE_STATE_CLOCK:
 		  if ((HAL_GetTick() - tIN_varre) > DT_VARRE)
 		  {
 		    tIN_varre = HAL_GetTick();  // salva tIN p/ prox tempo varredura
@@ -351,7 +351,7 @@ int main(void) {
 		    serializar(serial_data); // serializa dado p/74HC595 (shift reg)
 		  }
 			break;
-		case LDR_LOCAL:
+		case MACHINE_STATE_LDR_LOCAL:
 			// tarefa #3: qdo milis() > DELAY_VARRE ms, desde a ultima mudanca
 		  if ((HAL_GetTick() - tIN_varre) > DT_VARRE)
 		  {
@@ -403,7 +403,7 @@ int main(void) {
 		  }  // -- fim da tarefa #3 - varredura do display
 
 			break;
-		case LDR_NOT_LOCAL:
+		case MACHINE_STATE_LDR_NOT_LOCAL:
 		  if((HAL_GetTick() - transmitTimer > REQUEST_TRANSMISSION_DELAY && transmitFlag)) {
 		    transmitTimer = HAL_GetTick();
 		    transmitCounter++;
@@ -695,7 +695,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
 	if (hadc->Instance == ADC1) {
 		val_adc = HAL_ADC_GetValue(&hadc1);  // capta valor adc
-		setAdcState(ADC_STATE_SHOOT_ADC_CONVERSION);
+		setAdcState(ADC_STATE_CONVERT_TO_MILI_VOLTS);
 		;                  // alterou valor lido
 	}
 }

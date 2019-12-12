@@ -9,10 +9,10 @@
 #define STATEMACHINE_H_
 
 typedef enum state_machine {
-	CLOCK,
-	LDR_LOCAL,
-	LDR_NOT_LOCAL,
-	MAX_STATE
-} e_state_machine;
+	MACHINE_STATE_CLOCK,
+	MACHINE_STATE_LDR_LOCAL,
+	MACHINE_STATE_LDR_NOT_LOCAL,
+	MACHINE_STATE_MAX_STATE
+} eMachineState;
 
 #endif /* STATEMACHINE_H_ */
