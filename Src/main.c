@@ -135,7 +135,7 @@ void verifyTime(aData *myTime) {
 		myTime->minutes = 0;
 	}
 	if (myTime->seconds >= 60) {
-		setAdcState(1);
+		setAdcState(ADC_STATE_SHOOT_ADC_CONVERSION);
 		myTime->minutes++;
 		myTime->seconds = 0;
 	}
@@ -695,7 +695,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
 	if (hadc->Instance == ADC1) {
 		val_adc = HAL_ADC_GetValue(&hadc1);  // capta valor adc
-		setAdcState(2);
+		setAdcState(ADC_STATE_SHOOT_ADC_CONVERSION);
 		;                  // alterou valor lido
 	}
 }

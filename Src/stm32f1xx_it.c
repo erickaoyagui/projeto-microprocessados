@@ -60,7 +60,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-volatile uint32_t adcState = 1;       // VAR modo_oper LOCAL
+volatile uint32_t adcState = ADC_STATE_SHOOT_ADC_CONVERSION;       // VAR modo_oper LOCAL
 volatile uint32_t tIN_IRQ1 = 0;        // tempo entrada na �ｿｽltima IRQ6
 volatile uint32_t tIN_IRQ3 = 0;        // tempo entrada na �ｿｽltima IRQ6
 /* USER CODE END PV */
