@@ -17,7 +17,6 @@ void verifyTime(aData *myTime) {
 		myTime->minutes = 0;
 	}
 	if (myTime->seconds >= 60) {
-		//setAdcState(ADC_STATE_SHOOT_ADC_CONVERSION);
 		myTime->minutes++;
 		myTime->seconds = 0;
 	}
@@ -61,6 +60,14 @@ void setHours (aData *myTime, int hours){
 
 void setMinutes (aData *myTime, int minutes){
 	myTime->minutes = minutes;
+}
+
+int getHours (aData *myTime){
+	return myTime->hours;
+}
+
+int getMinutes (aData *myTime){
+	return myTime->minutes;
 }
 
 void setTempTimeToMyTime(aData *myTime){

@@ -155,6 +155,7 @@ int main(void) {
 			cenADC = 0,                      // ini unidade de seg
 			dezADC = 0,                      // ini dezena de seg
 			uniADC = 0;                      // ini unidade de minuto
+	int minAnterior = 0;
 
 	int16_t val7seg = 0x00FF,          // inicia 7-seg com 0xF (tudo apagado)
 			serial_data = 0x01FF;           // dado a serializar (dig | val7seg)
@@ -231,6 +232,11 @@ int main(void) {
 
 			tIN_relogio = HAL_GetTick();
 			incrementSeconds(&actualTime);
+			if(minAnterior != getMinutes(&actualTime)){
+				setAdcState(ADC_STATE_SHOOT_ADC_CONVERSION);
+				minAnterior = getMinutes(&actualTime);
+			}
+
 			//HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_15);
 			//uniHours = actualTime.hours % 10;
 			//dezHours = actualTime.hours / 10;
@@ -291,6 +297,8 @@ int main(void) {
 
 		switch (getMachineState()) {
 		case MACHINE_STATE_CLOCK:
+			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
 			switch (getResetClock()) {
 			case RESET_CLOCK:
 				if ((HAL_GetTick() - tIN_select) > DT_SELECT) {
@@ -441,6 +449,9 @@ int main(void) {
 			break;
 		case MACHINE_STATE_LDR_LOCAL:
 			// tarefa #3: qdo milis() > DELAY_VARRE ms, desde a ultima mudanca
+			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
+
 			if ((HAL_GetTick() - tIN_varre) > DT_VARRE) {
 				tIN_varre = HAL_GetTick();  // salva tIN p/ prox tempo varredura
 				switch (sttVARRE)
@@ -491,6 +502,8 @@ int main(void) {
 
 			break;
 		case MACHINE_STATE_LDR_NOT_LOCAL:
+			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
 			if ((HAL_GetTick() - transmitTimer > REQUEST_TRANSMISSION_DELAY
 					&& transmitFlag)) {
 				transmitTimer = HAL_GetTick();

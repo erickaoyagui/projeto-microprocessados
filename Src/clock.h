@@ -26,6 +26,10 @@ int getUniMinutes(aData *myTime);
 
 int getDezMinutes(aData *myTime);
 
+int getHours (aData *myTime);
+
+int getMinutes (aData *myTime);
+
 void setHours (aData *myTime, int hours);
 
 void setMinutes (aData *myTime, int minutes);
