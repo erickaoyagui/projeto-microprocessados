@@ -229,9 +229,22 @@ void SysTick_Handler(void)
 void EXTI1_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI1_IRQn 0 */
-  /* USER CODE BEGIN EXTI1_IRQn 0 */
-
-  /* USER CODE END EXTI1_IRQn 0 */
+	if ((HAL_GetTick() - tIN_IRQ1) > DT_DEBOUNCING)
+		  {
+		    tIN_IRQ1 = HAL_GetTick();                // tIN (ms) da �ｿｽltima IRQ1
+		    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == 0)
+		    {
+		    	switch (setClockSelect){
+		    		case SET_HOURS:
+		    			incrementTempTimeHours();
+		    		break;
+		    		case SET_MINUTES:
+		    			incrementTempTimeMinutes();
+		    		break;
+		    	}
+		    	verifyTempTime();
+		    }
+		  }
   /* USER CODE END EXTI1_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
   /* USER CODE BEGIN EXTI1_IRQn 1 */
@@ -247,13 +260,16 @@ void EXTI2_IRQHandler(void)
   /* USER CODE BEGIN EXTI2_IRQn 0 */
 	if ((HAL_GetTick() - tIN_IRQ2) > DT_DEBOUNCING)
 		  {
-		    tIN_IRQ3 = HAL_GetTick();                // tIN (ms) da �ｿｽltima IRQ1
+		    tIN_IRQ2 = HAL_GetTick();                // tIN (ms) da �ｿｽltima IRQ1
 		    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) == 0)
 		    {
 		      ++setClockSelect;
-		      if (setClockSelect > SET_MINUTES)
+		      if (setClockSelect > START_CLOCK)
 		    	  setSetClockSelect(SET_HOURS);
 		      }
+		    	if (setClockSelect == START_CLOCK){
+		    		setResetClock(NOT_RESET_CLOCK);
+		    	}
 		    }
   /* USER CODE END EXTI2_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_2);
@@ -441,7 +457,7 @@ eResetClock getSetClockSelect(void)
   static int x;                        // var local recebe modo_oper
   // OBS: se�ｿｽ�ｿｽo cr�ｿｽtica, desabilitamos todas as IRQs p/ atualizar var
   __disable_irq();                     // desabilita IRQs
-  x = resetClock;                       // faz x = adcState
+  x = setClockSelect;                       // faz x = adcState
   __enable_irq();                      // volta habilitar IRQs
   return x;                            // retorna x (=modo_oper)
 }

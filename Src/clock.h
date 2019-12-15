@@ -25,4 +25,29 @@ int getDezHours(aData *myTime);
 int getUniMinutes(aData *myTime);
 
 int getDezMinutes(aData *myTime);
+
+void setHours (aData *myTime, int hours);
+
+void setMinutes (aData *myTime, int minutes);
+
+void setTempTimeToMyTime(aData *myTime);
+
+void resetTempTime();
+
+void incrementTempTimeMinutes();
+
+void incrementTempTimeHours();
+
+int getTempTimeMinutes();
+
+int getTempTimeHours();
+
+int getTempTimeUniHours();
+
+int getTempTimeDezHours();
+
+int getTempTimeUniMinutes();
+
+int getTempTimeDezMinutes();
+
 #endif /* CLOCK_H_ */

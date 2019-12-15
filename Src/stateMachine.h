@@ -22,7 +22,8 @@ typedef enum reset_clock {
 
 typedef enum set_clock_select {
 	SET_HOURS,
-	SET_MINUTES
+	SET_MINUTES,
+	START_CLOCK
 } eSetClockSelect;
 
 #endif /* STATEMACHINE_H_ */
