@@ -15,4 +15,14 @@ typedef enum state_machine {
 	MACHINE_STATE_MAX_STATE
 } eMachineState;
 
+typedef enum reset_clock {
+	RESET_CLOCK,
+	NOT_RESET_CLOCK
+} eResetClock;
+
+typedef enum set_clock_select {
+	SET_HOURS,
+	SET_MINUTES
+} eSetClockSelect;
+
 #endif /* STATEMACHINE_H_ */

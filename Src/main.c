@@ -53,6 +53,7 @@
 #include <stm32f1xx_hal_uart.h>
 #include "stateMachine.h"
 #include "e_adc_state.h"
+#include "clock.h"
 #include <string.h>
 #include "main.h"
 
@@ -64,11 +65,6 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
-typedef struct { // struct usado para guardar as variaveis de horas, minutos e segundos do relogio
-	int hours;
-	int minutes;
-	int seconds;
-} aData;
 
 /* USER CODE END PTD */
 
@@ -126,20 +122,6 @@ void packSendBuffer(uint8_t * buffer, uint16_t val_adc);
 int isChecksumCorrect(uint8_t * receiveBuffer, uint16_t calculatedChecksum);
 uint16_t getADCValueFromBuffer(uint8_t * receiveBuffer);
 
-void verifyTime(aData *myTime) {
-	if (myTime->hours >= 24) {
-		myTime->hours = 0;
-	}
-	if (myTime->minutes >= 60) {
-		myTime->hours++;
-		myTime->minutes = 0;
-	}
-	if (myTime->seconds >= 60) {
-		setAdcState(ADC_STATE_SHOOT_ADC_CONVERSION);
-		myTime->minutes++;
-		myTime->seconds = 0;
-	}
-}
 
 /* USER CODE END PFP */
 
@@ -252,13 +234,12 @@ int main(void) {
 	  if ((HAL_GetTick() - tIN_relogio) > SEGUNDO) {
 
 	    tIN_relogio = HAL_GetTick();
-	    actualTime.seconds++;
+	    incrementSeconds(&actualTime);
 	    HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_15);
-	    verifyTime(&actualTime);
-	    uniHours = actualTime.hours % 10;
-	    dezHours = actualTime.hours / 10;
-	    uniMinutes = actualTime.minutes % 10;
-	    dezMinutes = actualTime.minutes / 10;
+	    //uniHours = actualTime.hours % 10;
+	    //dezHours = actualTime.hours / 10;
+	    //uniMinutes = actualTime.minutes % 10;
+	    //dezMinutes = actualTime.minutes / 10;
 	  }
 
 	  // RECEPTOR DE DADOS
@@ -323,26 +304,26 @@ int main(void) {
 		      case DIG_MILS: {
 		        sttVARRE = DIG_CENS;           // ajusta p/ prox digito
 		        serial_data = 0x0008;          // display #1
-		        val7seg = conv_7_seg(uniMinutes);
+		        val7seg = conv_7_seg(getUniMinutes(&actualTime));
 		        break;
 		      }
 		      case DIG_CENS: {
 		        sttVARRE = DIG_DEC;            // ajusta p/ prox digito
 		        serial_data = 0x00004;         // display #2
-		        val7seg = conv_7_seg(dezMinutes);
+		        val7seg = conv_7_seg(getDezMinutes(&actualTime));
 		        break;
 		      }
 		      case DIG_DEC: {
 		        sttVARRE = DIG_UNI;            // ajusta p/ prox digito
 		        serial_data = 0x0002;          // display #3
-		        val7seg = conv_7_seg(uniHours);
+		        val7seg = conv_7_seg(getUniHours(&actualTime));
 		        val7seg &= 0x7FFF;            // liga o ponto decimal
 		        break;
 		      }
 		      case DIG_UNI: {
 		        sttVARRE = DIG_MILS;           // ajusta p/ prox digito
 		        serial_data = 0x0001;          // display #3
-		        val7seg = conv_7_seg(dezHours);
+		        val7seg = conv_7_seg(getDezHours(&actualTime));
 		        break;
 		      }
 		    }  // fim case
