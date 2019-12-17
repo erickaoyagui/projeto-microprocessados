@@ -15,15 +15,11 @@ typedef enum state_machine {
 	MACHINE_STATE_MAX_STATE
 } eMachineState;
 
-typedef enum reset_clock {
-	RESET_CLOCK,
-	NOT_RESET_CLOCK
-} eResetClock;
-
 typedef enum set_clock_select {
-	SET_HOURS,
-	SET_MINUTES,
-	START_CLOCK
-} eSetClockSelect;
+	CLOCK_EDIT_MODE_RUN,
+	CLOCK_EDIT_MODE_HOUR,
+	CLOCK_EDIT_MODE_MINUTES,
+	CLOCK_EDIT_MODE_MAX_VALUE
+} eClockEditMode;
 
 #endif /* STATEMACHINE_H_ */

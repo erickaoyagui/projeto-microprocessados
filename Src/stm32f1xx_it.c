@@ -76,8 +76,7 @@ volatile uint32_t tIN_IRQ3 = 0;        // tempo entrada na �ｿｽltima IRQ6
 /* USER CODE BEGIN 0 */
 
 eMachineState machineState = MACHINE_STATE_CLOCK;
-eResetClock resetClock = RESET_CLOCK;
-eSetClockSelect setClockSelect = SET_HOURS;
+eClockEditMode clockEditMode = CLOCK_EDIT_MODE_RUN;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -234,11 +233,11 @@ void EXTI1_IRQHandler(void)
 		    tIN_IRQ1 = HAL_GetTick();                // tIN (ms) da �ｿｽltima IRQ1
 		    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == 0)
 		    {
-		    	switch (setClockSelect){
-		    		case SET_HOURS:
+		    	switch (clockEditMode){
+		    		case CLOCK_EDIT_MODE_HOUR:
 		    			incrementTempTimeHours();
 		    		break;
-		    		case SET_MINUTES:
+		    		case CLOCK_EDIT_MODE_MINUTES:
 		    			incrementTempTimeMinutes();
 		    		break;
 		    	}
@@ -255,20 +254,16 @@ void EXTI1_IRQHandler(void)
 /** entra no modo de edicao de horas
  *
  */
-void EXTI2_IRQHandler(void)
-{
+void EXTI2_IRQHandler(void) {
   /* USER CODE BEGIN EXTI2_IRQn 0 */
-  if ((HAL_GetTick() - tIN_IRQ2) > DT_DEBOUNCING)
-  {
+  if ((HAL_GetTick() - tIN_IRQ2) > DT_DEBOUNCING) {
     tIN_IRQ2 = HAL_GetTick();                // tIN (ms) da �ｿｽltima IRQ1
-    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) == GPIO_PIN_RESET)
-    {
-      ++setClockSelect;
-      if (setClockSelect > START_CLOCK)
-        setSetClockSelect(SET_HOURS);
-    }
-    if (setClockSelect == START_CLOCK){
-      setResetClock(NOT_RESET_CLOCK);
+
+    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) == GPIO_PIN_RESET) {
+      ++clockEditMode;
+      if (clockEditMode >= CLOCK_EDIT_MODE_MAX_VALUE) {
+        clockEditMode = CLOCK_EDIT_MODE_RUN;
+      }
     }
   }
   /* USER CODE END EXTI2_IRQn 0 */
@@ -400,63 +395,13 @@ eMachineState getMachineState(void)
   return x;                            // retorna x (=modo_oper)
 }
 
-void setResetClock(eResetClock rClock)
-{
-  // OBS: sessao critica, desabilitamos todas as IRQs p/ atualizar var
-  __disable_irq();                     // desabilita IRQs
-
-  if (rClock > NOT_RESET_CLOCK)                // se x maior MAX permitido
-  {
-    resetClock = RESET_CLOCK;           // set apenas com max
-  }
-  else if (rClock < RESET_CLOCK)                      // se x menor que 0
-  {
-	  resetClock = NOT_RESET_CLOCK;                       // set com 0
-  }
-  else                                // valor no intervalo 0-MAX
-  {
-	  resetClock = rClock;                       // modifica adcState
-  }
-  __enable_irq();                      // volta habilitar IRQs
-}
-
-eResetClock getResetClock(void)
-{
-  static int x;                        // var local recebe modo_oper
-  // OBS: se�ｿｽ�ｿｽo cr�ｿｽtica, desabilitamos todas as IRQs p/ atualizar var
-  __disable_irq();                     // desabilita IRQs
-  x = resetClock;                       // faz x = adcState
-  __enable_irq();                      // volta habilitar IRQs
-  return x;                            // retorna x (=modo_oper)
-}
-
-void setSetClockSelect(eSetClockSelect clockSelect)
-{
-  // OBS: sessao critica, desabilitamos todas as IRQs p/ atualizar var
-  __disable_irq();                     // desabilita IRQs
-
-  if (clockSelect > SET_MINUTES)                // se x maior MAX permitido
-  {
-    setClockSelect = SET_HOURS;           // set apenas com max
-  }
-  else if (clockSelect < SET_HOURS)                      // se x menor que 0
-  {
-	  setClockSelect = SET_MINUTES;                       // set com 0
-  }
-  else                                // valor no intervalo 0-MAX
-  {
-	  setClockSelect = clockSelect;                       // modifica adcState
-  }
-  __enable_irq();                      // volta habilitar IRQs
-}
-
 // fn que qpenas retorna o valor da var adcState
-eResetClock getSetClockSelect(void)
+eClockEditMode getClockEditMode(void)
 {
   static int x;                        // var local recebe modo_oper
   // OBS: se�ｿｽ�ｿｽo cr�ｿｽtica, desabilitamos todas as IRQs p/ atualizar var
   __disable_irq();                     // desabilita IRQs
-  x = setClockSelect;                       // faz x = adcState
+  x = clockEditMode;                       // faz x = adcState
   __enable_irq();                      // volta habilitar IRQs
   return x;                            // retorna x (=modo_oper)
 }

@@ -31,9 +31,9 @@ void verifyTempTime(){
 	}
 }
 
-void incrementSeconds(stHour *myTime) {
-	myTime->seconds++;
-	verifyTime(myTime);
+void incrementSeconds() {
+	tempTime.seconds++;
+	verifyTime(&tempTime);
 }
 
 int getUniHours(stHour *myTime){
@@ -43,11 +43,6 @@ int getUniHours(stHour *myTime){
 
 int getDezHours(stHour *myTime){
 	return myTime->hours / 10;
-}
-
-
-int getUniMinutes(stHour *myTime){
-	return myTime->minutes % 10;
 }
 
 int getDezMinutes(stHour *myTime){
@@ -87,6 +82,11 @@ void incrementTempTimeMinutes(){
 
 void incrementTempTimeHours(){
 	tempTime.hours++;
+}
+
+void incrementTempTimeSeconds() {
+  tempTime.seconds++;
+  verifyTempTime();
 }
 
 int getTempTimeMinutes(){

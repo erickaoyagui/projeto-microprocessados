@@ -72,7 +72,7 @@
 #define DT_VARRE  5             // inc varredura a cada 5 ms (~200 Hz)
 #define DT_SELECT  200
 #define DIGITO_APAGADO 0x10    // kte valor p/ apagar um d�ｿｽgito no display
-#define SEGUNDO 100
+#define SEGUNDO 30
 #define MINUTO 60*SEGUNDO
 #define RESET_CLOCK_TIME 3000
 #define MAX_TRANSMIT_TRIES 5
@@ -116,10 +116,8 @@ void setAdcState(int);             // seta modo_oper (no stm32f1xx_it.c)
 int getAdcState(void);             // obt�ｿｽm modo_oper (stm32f1xx_it.c)
 int getMachineState(void);
 void setMachineState(int);
-void setResetClock(eResetClock rClock);
-int getResetClock(void);
-void setSetClockSelect(eSetClockSelect clockSelect);
-int getSetClockSelect(void);
+void setClockEditMode(eClockEditMode clockSelect);
+int getClockEditMode(void);
 void reset_pin_GPIOs(void);         // reset pinos da SPI
 void serializar(int ser_data);       // prot fn serializa dados p/ 74HC595
 int16_t conv_7_seg(int NumHex);      // prot fn conv valor --> 7-seg
@@ -177,7 +175,6 @@ int main(void) {
 	    transmitTimer = 0,
 	    uartResponseWaitTimer = 0;
 
-	stHour actualTime = { 0, 0, 0 };
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -230,29 +227,13 @@ int main(void) {
 			if (HAL_GetTick() - resetClockTimer > RESET_CLOCK_TIME) {
 				resetClockTimer = HAL_GetTick();
 				setMachineState(MACHINE_STATE_CLOCK);
-				resetClockStTimer(&actualTime);
-				setResetClock(RESET_CLOCK);
-				setSetClockSelect(SET_HOURS);
 				resetTempTime();
 			}
 		} else {
 			resetClockTimer = HAL_GetTick();
 		}
 
-		// Incrementa tempo do relogio
-		if ((HAL_GetTick() - tIN_relogio) > SEGUNDO) {
-
-			tIN_relogio = HAL_GetTick();
-			incrementSeconds(&actualTime);
-
-			if(minAnterior != getMinutes(&actualTime)){
-			  setAdcState(ADC_STATE_SHOOT_ADC_CONVERSION);
-			  minAnterior = getMinutes(&actualTime);
-			}
-		}
-
 		if (receivedDataFlag) {
-
 		  if (isRequestToSendData(receiveBuffer, requestBuffer)) {
 		    setAdcState(ADC_STATE_SHOOT_ADC_CONVERSION);
 		    shouldSendAdcValue = TRUE;
@@ -293,153 +274,120 @@ int main(void) {
 
 		switch (getMachineState()) {
 		  case MACHINE_STATE_CLOCK:
-		    switch (getResetClock()) {
-		      case RESET_CLOCK:
+		    switch (getClockEditMode()) {
+		      case CLOCK_EDIT_MODE_MINUTES:
+		      case CLOCK_EDIT_MODE_HOUR:
+
 		        if ((HAL_GetTick() - tIN_select) > DT_SELECT) {
 		          tIN_select = HAL_GetTick(); // salva tIN p/ prox tempo varredura
-		          if(acende){
-		            acende = 0;
+		          acende = !acende;
+		        }
+
+		        if ((HAL_GetTick() - tIN_varre) > DT_VARRE) {
+		          tIN_varre = HAL_GetTick(); // salva tIN p/ prox tempo varredura
+		          switch (sttVARRE) {
+		            case DIG_MILS: {
+		              sttVARRE = DIG_CENS;        // ajusta p/ prox digito
+		              serial_data = 0x0008;          // display #1
+
+		              if((getClockEditMode() == CLOCK_EDIT_MODE_MINUTES) && !acende) {
+		                val7seg = 0xFFFF;
+		              } else {
+		                val7seg = conv_7_seg(getTempTimeUniMinutes());
+		              }
+		              break;
+		            }
+		            case DIG_CENS: {
+		              sttVARRE = DIG_DEC;         // ajusta p/ prox digito
+		              serial_data = 0x00004;         // display #2
+
+		              if((getClockEditMode() == CLOCK_EDIT_MODE_MINUTES) && !acende) {
+		                val7seg = 0xFFFF;
+		              } else {
+		                val7seg = conv_7_seg(getTempTimeDezMinutes());
+		              }
+		              break;
+		            }
+		            case DIG_DEC: {
+		              sttVARRE = DIG_UNI;         // ajusta p/ prox digito
+		              serial_data = 0x0002;          // display #3
+
+		              if((getClockEditMode() == CLOCK_EDIT_MODE_HOUR) && !acende) {
+		                val7seg = 0xFFFF;
+		              } else {
+		                val7seg = conv_7_seg(getTempTimeUniHours());
+		                val7seg &= 0x7FFF;           // liga o ponto decimal
+		              }
+		              break;
+		            }
+		            case DIG_UNI: {
+		              sttVARRE = DIG_MILS;        // ajusta p/ prox digito
+		              serial_data = 0x0001;          // display #3
+
+		              if((getClockEditMode() == CLOCK_EDIT_MODE_HOUR) && !acende) {
+		                val7seg = 0xFFFF;
+		              } else {
+		                val7seg = conv_7_seg(getTempTimeDezHours());
+		                val7seg &= 0x7FFF;           // liga o ponto decimal
+		              }
+		              break;
+		            }
 		          }
-		          else {
-		            acende = 1;
+		          tIN_varre = HAL_GetTick(); // tmp atual em que fez essa varredura
+		          serial_data |= val7seg; // OR com val7seg = dado a serializar
+		          serializar(serial_data); // serializa dado p/74HC595 (shift reg)
+		        }
+		      case CLOCK_EDIT_MODE_RUN:
+
+		        // Incrementa tempo do relogio
+		        if ((HAL_GetTick() - tIN_relogio) > SEGUNDO) {
+
+		          tIN_relogio = HAL_GetTick();
+		          incrementSeconds();
+
+		          if(minAnterior != getTempTimeMinutes()){
+		            setAdcState(ADC_STATE_SHOOT_ADC_CONVERSION);
+		            minAnterior = getTempTimeMinutes();
 		          }
 		        }
 
-		        switch (getSetClockSelect()) {
-		          case SET_HOURS:
-		            if ((HAL_GetTick() - tIN_varre) > DT_VARRE) {
-		              tIN_varre = HAL_GetTick(); // salva tIN p/ prox tempo varredura
-		              switch (sttVARRE)
-		              // teste e escolha de qual DIG vai varrer
-		              {
-		                case DIG_MILS: {
-		                  sttVARRE = DIG_CENS;        // ajusta p/ prox digito
-		                  serial_data = 0x0008;          // display #1
-		                  val7seg = conv_7_seg(getTempTimeUniMinutes());
-		                  break;
-		                }
-		                case DIG_CENS: {
-		                  sttVARRE = DIG_DEC;         // ajusta p/ prox digito
-		                  serial_data = 0x00004;         // display #2
-		                  val7seg = conv_7_seg(getTempTimeDezMinutes());
-		                  break;
-		                }
-		                case DIG_DEC: {
-		                  sttVARRE = DIG_UNI;         // ajusta p/ prox digito
-		                  serial_data = 0x0002;          // display #3
-		                  if(acende){
-		                    val7seg = conv_7_seg(getTempTimeUniHours());
-		                    val7seg &= 0x7FFF;           // liga o ponto decimal
-		                  }
-		                  else {
-		                    val7seg = 0xFFFF;
-		                  }
-		                  break;
-		                }
-		                case DIG_UNI: {
-		                  sttVARRE = DIG_MILS;        // ajusta p/ prox digito
-		                  serial_data = 0x0001;          // display #3
-		                  if(acende){
-		                    val7seg = conv_7_seg(getTempTimeDezHours());
-		                  }
-		                  else {
-		                    val7seg = 0xFFFF;
-		                  }
-		                  break;
-		                }
-		              }
-		              tIN_varre = HAL_GetTick(); // tmp atual em que fez essa varredura
-		              serial_data |= val7seg; // OR com val7seg = dado a serializar
-		              serializar(serial_data); // serializa dado p/74HC595 (shift reg)
-		              setTempTimeToMyTime(&actualTime);
+		        // Envia para o display
+		        if ((HAL_GetTick() - tIN_varre) > DT_VARRE) {
+		          tIN_varre = HAL_GetTick(); // salva tIN p/ prox tempo varredura
+		          switch (sttVARRE)
+		          // teste e escolha de qual DIG vai varrer
+		          {
+		            case DIG_MILS: {
+		              sttVARRE = DIG_CENS;           // ajusta p/ prox digito
+		              serial_data = 0x0008;          // display #1
+		              val7seg = conv_7_seg(getTempTimeUniMinutes());
+		              break;
 		            }
-		            break;
-		          case SET_MINUTES:
-		            if ((HAL_GetTick() - tIN_varre) > DT_VARRE) {
-		              tIN_varre = HAL_GetTick(); // salva tIN p/ prox tempo varredura
-		              switch (sttVARRE)
-		              // teste e escolha de qual DIG vai varrer
-		              {
-		                case DIG_MILS: {
-		                  sttVARRE = DIG_CENS;        // ajusta p/ prox digito
-		                  serial_data = 0x0008;          // display #1
-		                  if(acende){
-		                    val7seg = conv_7_seg(getTempTimeUniMinutes());
-		                  }
-		                  else {
-		                    val7seg = 0xFFFF;
-		                  }
-		                  break;
-		                }
-		                case DIG_CENS: {
-		                  sttVARRE = DIG_DEC;         // ajusta p/ prox digito
-		                  serial_data = 0x00004;         // display #2
-		                  if(acende){
-		                    val7seg = conv_7_seg(getTempTimeDezMinutes());
-		                  }
-		                  else {
-		                    val7seg = 0xFFFF;
-		                  }
-		                  break;
-		                }
-		                case DIG_DEC: {
-		                  sttVARRE = DIG_UNI;         // ajusta p/ prox digito
-		                  serial_data = 0x0002;          // display #3
-		                  val7seg = conv_7_seg(getTempTimeUniHours());
-		                  val7seg &= 0x7FFF;           // liga o ponto decimal
-		                  break;
-		                }
-		                case DIG_UNI: {
-		                  sttVARRE = DIG_MILS;        // ajusta p/ prox digito
-		                  serial_data = 0x0001;          // display #3
-		                  val7seg = conv_7_seg(getTempTimeDezHours());
-		                  break;
-		                }
-		              }
-		              tIN_varre = HAL_GetTick(); // tmp atual em que fez essa varredura
-		              serial_data |= val7seg; // OR com val7seg = dado a serializar
-		              serializar(serial_data); // serializa dado p/74HC595 (shift reg)
-		              setTempTimeToMyTime(&actualTime);
+		            case DIG_CENS: {
+		              sttVARRE = DIG_DEC;            // ajusta p/ prox digito
+		              serial_data = 0x00004;         // display #2
+		              val7seg = conv_7_seg(getTempTimeDezMinutes());
+		              break;
 		            }
+		            case DIG_DEC: {
+		              sttVARRE = DIG_UNI;            // ajusta p/ prox digito
+		              serial_data = 0x0002;          // display #3
+		              val7seg = conv_7_seg(getTempTimeUniHours());
+		              val7seg &= 0x7FFF;            // liga o ponto decimal
+		              break;
+		            }
+		            case DIG_UNI: {
+		              sttVARRE = DIG_MILS;           // ajusta p/ prox digito
+		              serial_data = 0x0001;          // display #3
+		              val7seg = conv_7_seg(getTempTimeDezHours());
+		              break;
+		            }
+		          }  // fim case
+		          tIN_varre = HAL_GetTick(); // tmp atual em que fez essa varredura
+		          serial_data |= val7seg; // OR com val7seg = dado a serializar
+		          serializar(serial_data); // serializa dado p/74HC595 (shift reg)
 		        }
 		        break;
-		          case NOT_RESET_CLOCK:
-		            if ((HAL_GetTick() - tIN_varre) > DT_VARRE) {
-		              tIN_varre = HAL_GetTick(); // salva tIN p/ prox tempo varredura
-		              switch (sttVARRE)
-		              // teste e escolha de qual DIG vai varrer
-		              {
-		                case DIG_MILS: {
-		                  sttVARRE = DIG_CENS;           // ajusta p/ prox digito
-		                  serial_data = 0x0008;          // display #1
-		                  val7seg = conv_7_seg(getUniMinutes(&actualTime));
-		                  break;
-		                }
-		                case DIG_CENS: {
-		                  sttVARRE = DIG_DEC;            // ajusta p/ prox digito
-		                  serial_data = 0x00004;         // display #2
-		                  val7seg = conv_7_seg(getDezMinutes(&actualTime));
-		                  break;
-		                }
-		                case DIG_DEC: {
-		                  sttVARRE = DIG_UNI;            // ajusta p/ prox digito
-		                  serial_data = 0x0002;          // display #3
-		                  val7seg = conv_7_seg(getUniHours(&actualTime));
-		                  val7seg &= 0x7FFF;            // liga o ponto decimal
-		                  break;
-		                }
-		                case DIG_UNI: {
-		                  sttVARRE = DIG_MILS;           // ajusta p/ prox digito
-		                  serial_data = 0x0001;          // display #3
-		                  val7seg = conv_7_seg(getDezHours(&actualTime));
-		                  break;
-		                }
-		              }  // fim case
-		              tIN_varre = HAL_GetTick(); // tmp atual em que fez essa varredura
-		              serial_data |= val7seg; // OR com val7seg = dado a serializar
-		              serializar(serial_data); // serializa dado p/74HC595 (shift reg)
-		            }
-		            break;
 		    }
 		    break;
 		      case MACHINE_STATE_LDR_LOCAL:

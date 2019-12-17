@@ -16,7 +16,7 @@ typedef struct { // struct usado para guardar as variaveis de horas, minutos e s
 
 void verifyTime(stHour *myTime);
 
-void incrementSeconds(stHour *myTime);
+void incrementSeconds();
 
 int getUniHours(stHour *myTime);
 
