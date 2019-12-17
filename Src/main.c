@@ -73,10 +73,11 @@
 #define DT_SELECT  200
 #define DIGITO_APAGADO 0x10    // kte valor p/ apagar um d�ｿｽgito no display
 #define SEGUNDO 100
+#define MINUTO 60*SEGUNDO
 #define RESET_CLOCK_TIME 3000
 #define MAX_TRANSMIT_TRIES 5
 #define BUFFER_SIZE 4
-#define REQUEST_TRANSMISSION_DELAY (uint32_t) 200
+#define REQUEST_TRANSMISSION_DELAY (uint32_t) MINUTO
 #define WAITING_REQUEST_LED_BLINK_DELAY 100
 #define SEVEN_SEG_E 14
 
@@ -135,6 +136,7 @@ void turnOffLeds();
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 int16_t val_adc = 0;                 // var global: valor lido no ADC
+int16_t receivedValAdc = 0;
 
 uint8_t requestBuffer[BUFFER_SIZE] = { 0x72, 0x72, 0x72, 0x72 };
 uint8_t receiveBuffer[BUFFER_SIZE] = { 0x00, 0x00, 0x00, 0x00 };
@@ -167,7 +169,7 @@ int main(void) {
 			serial_data = 0x01FF;           // dado a serializar (dig | val7seg)
 
 	uint32_t miliVolt = 0x0,           // val adc convertido p/ miliVolts
-			tIN_varre = 0,                  // registra tempo �ｿｽltima varredura
+			tIN_varre = 0,                  // registra tempo ultima varredura
 			tIN_relogio = 0,
 			tIN_select = 0;
 
@@ -259,10 +261,8 @@ int main(void) {
 		    if (isChecksumCorrect(receiveBuffer,
 		        calculateChecksum(receiveBuffer))) {
 
-		      val_adc = getADCValueFromBuffer(receiveBuffer);
+		      receivedValAdc = getADCValueFromBuffer(receiveBuffer);
 
-		      //Indica que dado pode ser convertido para mV e pode ser colocado no display
-		      setAdcState(ADC_STATE_CONVERT_TO_MILI_VOLTS);
 		      transmitCounter = 0;
 		      isWaitingForUartResponse = FALSE;
 		    }
@@ -279,7 +279,7 @@ int main(void) {
 		  HAL_ADC_Start_IT(&hadc1);  // dispara ADC p/ conversao por IRQ
 		}
 
-		if (getAdcState() == ADC_STATE_CONVERT_TO_MILI_VOLTS) // entra qdo valor val_adc atualizado
+		if (getAdcState() == ADC_STATE_CONVERT_TO_MILI_VOLTS && getMachineState() == MACHINE_STATE_LDR_LOCAL) // entra qdo valor val_adc atualizado
 		{
 		  // converter o valor lido em decimais p/ display
 		  miliVolt = val_adc * 3300 / 4095;
@@ -304,6 +304,7 @@ int main(void) {
 		            acende = 1;
 		          }
 		        }
+
 		        switch (getSetClockSelect()) {
 		          case SET_HOURS:
 		            if ((HAL_GetTick() - tIN_varre) > DT_VARRE) {
@@ -519,56 +520,65 @@ int main(void) {
 		          cenADC = transmitCounter / 10;
 		          dezADC = SEVEN_SEG_E;
 		          uniADC = SEVEN_SEG_E;
+		        } else {
+		          // converter o valor recebido em decimais p/ display
+		          miliVolt = receivedValAdc * 3300 / 4095;
+		          uniADC = miliVolt / 1000;
+		          dezADC = (miliVolt - (uniADC * 1000)) / 100;
+		          cenADC = (miliVolt - (uniADC * 1000) - (dezADC * 100)) / 10;
+		          milADC = miliVolt - (uniADC * 1000) - (dezADC * 100)
+	                                    - (cenADC * 10);
 		        }
 
 
-		          if ((HAL_GetTick() - tIN_varre) > DT_VARRE) {
-		            tIN_varre = HAL_GetTick(); // salva tIN p/ prox tempo varredura
-		            switch (sttVARRE)
-		            // teste e escolha de qual DIG vai varrer
-		            {
-		              case DIG_MILS: {
-		                sttVARRE = DIG_CENS;           // ajusta p/ prox digito
-		                serial_data = 0x0008;          // display #1
-		                val7seg = conv_7_seg(milADC);
-		                break;
+		        if ((HAL_GetTick() - tIN_varre) > DT_VARRE) {
+		          tIN_varre = HAL_GetTick(); // salva tIN p/ prox tempo varredura
+
+		          switch (sttVARRE)
+		          // teste e escolha de qual DIG vai varrer
+		          {
+		            case DIG_MILS: {
+		              sttVARRE = DIG_CENS;           // ajusta p/ prox digito
+		              serial_data = 0x0008;          // display #1
+		              val7seg = conv_7_seg(milADC);
+		              break;
+		            }
+		            case DIG_CENS: {
+		              sttVARRE = DIG_DEC;            // ajusta p/ prox digito
+		              serial_data = 0x00004;         // display #2
+		              if (cenADC > 0 || dezADC > 0 || uniADC > 0) {
+		                val7seg = conv_7_seg(cenADC);
+		              } else {
+		                val7seg = conv_7_seg(DIGITO_APAGADO);
 		              }
-		              case DIG_CENS: {
-		                sttVARRE = DIG_DEC;            // ajusta p/ prox digito
-		                serial_data = 0x00004;         // display #2
-		                if (cenADC > 0 || dezADC > 0 || uniADC > 0) {
-		                  val7seg = conv_7_seg(cenADC);
-		                } else {
-		                  val7seg = conv_7_seg(DIGITO_APAGADO);
-		                }
-		                break;
+		              break;
+		            }
+		            case DIG_DEC: {
+		              sttVARRE = DIG_UNI;            // ajusta p/ prox digito
+		              serial_data = 0x0002;          // display #3
+		              if (dezADC > 0 || uniADC > 0) {
+		                val7seg = conv_7_seg(dezADC);
+		              } else {
+		                val7seg = conv_7_seg(DIGITO_APAGADO);
 		              }
-		              case DIG_DEC: {
-		                sttVARRE = DIG_UNI;            // ajusta p/ prox digito
-		                serial_data = 0x0002;          // display #3
-		                if (dezADC > 0 || uniADC > 0) {
-		                  val7seg = conv_7_seg(dezADC);
-		                } else {
-		                  val7seg = conv_7_seg(DIGITO_APAGADO);
-		                }
-		                break;
+		              break;
+		            }
+		            case DIG_UNI: {
+		              sttVARRE = DIG_MILS;           // ajusta p/ prox digito
+		              serial_data = 0x0001;          // display #3
+		              if (uniADC > 0) {
+		                val7seg = conv_7_seg(uniADC);
+		                val7seg &= 0x7FFF;           // liga o ponto decimal
+		              } else {
+		                val7seg = conv_7_seg(DIGITO_APAGADO);
 		              }
-		              case DIG_UNI: {
-		                sttVARRE = DIG_MILS;           // ajusta p/ prox digito
-		                serial_data = 0x0001;          // display #3
-		                if (uniADC > 0) {
-		                  val7seg = conv_7_seg(uniADC);
-		                  val7seg &= 0x7FFF;           // liga o ponto decimal
-		                } else {
-		                  val7seg = conv_7_seg(DIGITO_APAGADO);
-		                }
-		                break;
-		              }
-		            }  // fim case
-		            tIN_varre = HAL_GetTick(); // tmp atual em que fez essa varredura
-		            serial_data |= val7seg; // OR com val7seg = dado a serializar
-		            serializar(serial_data); // serializa dado p/74HC595 (shift reg)
-		          }  // -- fim da tarefa #3 - varredura do display
+		              break;
+		            }
+		          }  // fim case
+		          tIN_varre = HAL_GetTick(); // tmp atual em que fez essa varredura
+		          serial_data |= val7seg; // OR com val7seg = dado a serializar
+		          serializar(serial_data); // serializa dado p/74HC595 (shift reg)
+		        }  // -- fim da tarefa #3 - varredura do display
 
 		        break;
 		}
