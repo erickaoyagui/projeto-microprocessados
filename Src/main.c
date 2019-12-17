@@ -135,7 +135,7 @@ uint8_t requestBuffer[BUFFER_SIZE] = { 0x72, 0x72, 0x72, 0x72 };
 uint8_t receiveBuffer[BUFFER_SIZE] = { 0x00, 0x00, 0x00, 0x00 };
 uint8_t dataBuffer[BUFFER_SIZE] = { 0x00, 0x00, 0x00, 0x00 };
 
-void resetClockStTimer(aData * actualTime) {
+void resetClockStTimer(stHour * actualTime) {
 	actualTime->seconds = 0;
 	actualTime->minutes = 0;
 	actualTime->hours = 0;
@@ -155,6 +155,7 @@ int main(void) {
 			cenADC = 0,                      // ini unidade de seg
 			dezADC = 0,                      // ini dezena de seg
 			uniADC = 0;                      // ini unidade de minuto
+
 	int minAnterior = 0;
 
 	int16_t val7seg = 0x00FF,          // inicia 7-seg com 0xF (tudo apagado)
@@ -166,7 +167,7 @@ int main(void) {
 
 	volatile uint32_t resetClockTimer = 0, transmitTimer = 0;
 
-	aData actualTime = { 0, 0, 0 };
+	stHour actualTime = { 0, 0, 0 };
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/

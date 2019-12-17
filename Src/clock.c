@@ -6,9 +6,9 @@
  */
 #include "clock.h"
 
-aData tempTime = { 0, 0, 0 };
+stHour tempTime = { 0, 0, 0 };
 
-void verifyTime(aData *myTime) {
+void verifyTime(stHour *myTime) {
 	if (myTime->hours >= 24) {
 		myTime->hours = 0;
 	}
@@ -31,46 +31,46 @@ void verifyTempTime(){
 	}
 }
 
-void incrementSeconds(aData *myTime) {
+void incrementSeconds(stHour *myTime) {
 	myTime->seconds++;
 	verifyTime(myTime);
 }
 
-int getUniHours(aData *myTime){
+int getUniHours(stHour *myTime){
 	return myTime->hours % 10;
 }
 
 
-int getDezHours(aData *myTime){
+int getDezHours(stHour *myTime){
 	return myTime->hours / 10;
 }
 
 
-int getUniMinutes(aData *myTime){
+int getUniMinutes(stHour *myTime){
 	return myTime->minutes % 10;
 }
 
-int getDezMinutes(aData *myTime){
+int getDezMinutes(stHour *myTime){
 	return myTime->minutes / 10;
 }
 
-void setHours (aData *myTime, int hours){
+void setHours (stHour *myTime, int hours){
 	myTime->hours = hours;
 }
 
-void setMinutes (aData *myTime, int minutes){
+void setMinutes (stHour *myTime, int minutes){
 	myTime->minutes = minutes;
 }
 
-int getHours (aData *myTime){
+int getHours (stHour *myTime){
 	return myTime->hours;
 }
 
-int getMinutes (aData *myTime){
+int getMinutes (stHour *myTime){
 	return myTime->minutes;
 }
 
-void setTempTimeToMyTime(aData *myTime){
+void setTempTimeToMyTime(stHour *myTime){
 	myTime->hours = tempTime.hours;
 	myTime->minutes = tempTime.minutes;
 	myTime->seconds = 0;

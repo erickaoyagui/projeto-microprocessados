@@ -258,19 +258,19 @@ void EXTI1_IRQHandler(void)
 void EXTI2_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI2_IRQn 0 */
-	if ((HAL_GetTick() - tIN_IRQ2) > DT_DEBOUNCING)
-		  {
-		    tIN_IRQ2 = HAL_GetTick();                // tIN (ms) da �ｿｽltima IRQ1
-		    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) == 0)
-		    {
-		      ++setClockSelect;
-		      if (setClockSelect > START_CLOCK)
-		    	  setSetClockSelect(SET_HOURS);
-		      }
-		    	if (setClockSelect == START_CLOCK){
-		    		setResetClock(NOT_RESET_CLOCK);
-		    	}
-		    }
+  if ((HAL_GetTick() - tIN_IRQ2) > DT_DEBOUNCING)
+  {
+    tIN_IRQ2 = HAL_GetTick();                // tIN (ms) da �ｿｽltima IRQ1
+    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) == GPIO_PIN_RESET)
+    {
+      ++setClockSelect;
+      if (setClockSelect > START_CLOCK)
+        setSetClockSelect(SET_HOURS);
+    }
+    if (setClockSelect == START_CLOCK){
+      setResetClock(NOT_RESET_CLOCK);
+    }
+  }
   /* USER CODE END EXTI2_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_2);
   /* USER CODE BEGIN EXTI2_IRQn 1 */
@@ -284,20 +284,20 @@ void EXTI2_IRQHandler(void)
 void EXTI3_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI3_IRQn 0 */
-	if ((HAL_GetTick() - tIN_IRQ3) > DT_DEBOUNCING)
-	  {
-	    tIN_IRQ3 = HAL_GetTick();                // tIN (ms) da �ｿｽltima IRQ1
-	    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_3) == 0)
-	    {
-	      ++machineState;
-	      if (machineState == MACHINE_STATE_LDR_LOCAL) {
-	        setAdcState(ADC_STATE_SHOOT_ADC_CONVERSION);
-	      }
-	      if (machineState >= MACHINE_STATE_MAX_STATE) {
-	        machineState = MACHINE_STATE_CLOCK;
-	      }
-	    }
-	  }
+  if ((HAL_GetTick() - tIN_IRQ3) > DT_DEBOUNCING)
+  {
+    tIN_IRQ3 = HAL_GetTick();                // tIN (ms) da �ｿｽltima IRQ1
+    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_3) == 0)
+    {
+      ++machineState;
+      if (machineState == MACHINE_STATE_LDR_LOCAL) {
+        setAdcState(ADC_STATE_SHOOT_ADC_CONVERSION);
+      }
+      if (machineState >= MACHINE_STATE_MAX_STATE) {
+        machineState = MACHINE_STATE_CLOCK;
+      }
+    }
+  }
 
   /* USER CODE END EXTI3_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
@@ -420,7 +420,6 @@ void setResetClock(eResetClock rClock)
   __enable_irq();                      // volta habilitar IRQs
 }
 
-// fn que qpenas retorna o valor da var adcState
 eResetClock getResetClock(void)
 {
   static int x;                        // var local recebe modo_oper

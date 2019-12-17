@@ -12,29 +12,29 @@ typedef struct { // struct usado para guardar as variaveis de horas, minutos e s
 	int hours;
 	int minutes;
 	int seconds;
-} aData;
+} stHour;
 
-void verifyTime(aData *myTime);
+void verifyTime(stHour *myTime);
 
-void incrementSeconds(aData *myTime);
+void incrementSeconds(stHour *myTime);
 
-int getUniHours(aData *myTime);
+int getUniHours(stHour *myTime);
 
-int getDezHours(aData *myTime);
+int getDezHours(stHour *myTime);
 
-int getUniMinutes(aData *myTime);
+int getUniMinutes(stHour *myTime);
 
-int getDezMinutes(aData *myTime);
+int getDezMinutes(stHour *myTime);
 
-int getHours (aData *myTime);
+int getHours (stHour *myTime);
 
-int getMinutes (aData *myTime);
+int getMinutes (stHour *myTime);
 
-void setHours (aData *myTime, int hours);
+void setHours (stHour *myTime, int hours);
 
-void setMinutes (aData *myTime, int minutes);
+void setMinutes (stHour *myTime, int minutes);
 
-void setTempTimeToMyTime(aData *myTime);
+void setTempTimeToMyTime(stHour *myTime);
 
 void resetTempTime();
 
