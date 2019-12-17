@@ -90,8 +90,10 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
-volatile int receivedDataFlag = FALSE, transmitFlag = TRUE,
-		hasDataToDisplay = FALSE;
+volatile int receivedDataFlag = FALSE,
+    transmitFlag = TRUE,
+		hasDataToDisplay = FALSE,
+		shouldSendAdcValue = FALSE;
 
 int transmitCounter = 0;
 UART_HandleTypeDef huart1;
@@ -249,9 +251,8 @@ int main(void) {
 		if (receivedDataFlag) {
 
 		  if (isRequestToSendData(receiveBuffer, requestBuffer)) {
-		    packSendBuffer(dataBuffer, val_adc);
-		    // TODO verificar se aqui é o melhor lugar para deixar a transmissao
-		    HAL_UART_Transmit_IT(&huart1, dataBuffer, sizeof(dataBuffer));
+		    setAdcState(ADC_STATE_SHOOT_ADC_CONVERSION);
+		    shouldSendAdcValue = TRUE;
 		  } else {
 		    // entao eh dados
 		    if (isChecksumCorrect(receiveBuffer,
@@ -267,8 +268,9 @@ int main(void) {
 		      // indica que requisicao deve ser feita imediatamente
 		      transmitFlag = TRUE;
 		    }
-		    receivedDataFlag = FALSE;
+
 		  }
+		  receivedDataFlag = FALSE;
 
 		  HAL_UART_Receive_IT(&huart1, receiveBuffer, sizeof(receiveBuffer));
 		}
@@ -792,8 +794,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
 	if (hadc->Instance == ADC1) {
 		val_adc = HAL_ADC_GetValue(&hadc1);  // capta valor adc
+
+		// Verifica se deve enviar valor atualizado para outra placa via UART
+		if(shouldSendAdcValue) {
+		  shouldSendAdcValue = FALSE;
+		  packSendBuffer(dataBuffer, val_adc);
+		  HAL_UART_Transmit_IT(&huart1, dataBuffer, sizeof(dataBuffer));
+		}
+
 		setAdcState(ADC_STATE_CONVERT_TO_MILI_VOLTS);
-		;                  // alterou valor lido
 	}
 }
 
