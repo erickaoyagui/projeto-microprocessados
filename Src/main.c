@@ -77,6 +77,8 @@
 #define MAX_TRANSMIT_TRIES 5
 #define BUFFER_SIZE 4
 #define REQUEST_TRANSMISSION_DELAY (uint32_t) 200
+#define WAITING_REQUEST_LED_BLINK_DELAY 100
+#define SEVEN_SEG_E 14
 
 #define TRUE 1
 #define FALSE 0
@@ -91,9 +93,9 @@
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
 volatile int receivedDataFlag = FALSE,
-    transmitFlag = TRUE,
-		hasDataToDisplay = FALSE,
-		shouldSendAdcValue = FALSE;
+    canTransmitFlag = TRUE,
+		shouldSendAdcValue = FALSE,
+		isWaitingForUartResponse = FALSE;
 
 int transmitCounter = 0;
 UART_HandleTypeDef huart1;
@@ -126,6 +128,7 @@ uint16_t calculateChecksum(uint8_t * buffer);
 void packSendBuffer(uint8_t * buffer, uint16_t val_adc);
 int isChecksumCorrect(uint8_t * receiveBuffer, uint16_t calculatedChecksum);
 uint16_t getADCValueFromBuffer(uint8_t * receiveBuffer);
+void turnOffLeds();
 
 /* USER CODE END PFP */
 
@@ -165,9 +168,12 @@ int main(void) {
 
 	uint32_t miliVolt = 0x0,           // val adc convertido p/ miliVolts
 			tIN_varre = 0,                  // registra tempo �ｿｽltima varredura
-			tIN_relogio = 0, tIN_select = 0;
+			tIN_relogio = 0,
+			tIN_select = 0;
 
-	volatile uint32_t resetClockTimer = 0, transmitTimer = 0;
+	volatile uint32_t resetClockTimer = 0,
+	    transmitTimer = 0,
+	    uartResponseWaitTimer = 0;
 
 	stHour actualTime = { 0, 0, 0 };
 	/* USER CODE END 1 */
@@ -243,11 +249,6 @@ int main(void) {
 			}
 		}
 
-		// Da sinal de erro caso nao sejam respondidas requisicoes UART feitas
-		if (transmitCounter >= MAX_TRANSMIT_TRIES) {
-			// TODO Colocar sinal de erro
-		}
-
 		if (receivedDataFlag) {
 
 		  if (isRequestToSendData(receiveBuffer, requestBuffer)) {
@@ -263,10 +264,7 @@ int main(void) {
 		      //Indica que dado pode ser convertido para mV e pode ser colocado no display
 		      setAdcState(ADC_STATE_CONVERT_TO_MILI_VOLTS);
 		      transmitCounter = 0;
-		      hasDataToDisplay = TRUE;
-		    } else {
-		      // indica que requisicao deve ser feita imediatamente
-		      transmitFlag = TRUE;
+		      isWaitingForUartResponse = FALSE;
 		    }
 
 		  }
@@ -295,8 +293,6 @@ int main(void) {
 
 		switch (getMachineState()) {
 		  case MACHINE_STATE_CLOCK:
-		    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
-		    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
 		    switch (getResetClock()) {
 		      case RESET_CLOCK:
 		        if ((HAL_GetTick() - tIN_select) > DT_SELECT) {
@@ -446,10 +442,6 @@ int main(void) {
 		    }
 		    break;
 		      case MACHINE_STATE_LDR_LOCAL:
-		        // tarefa #3: qdo milis() > DELAY_VARRE ms, desde a ultima mudanca
-		        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
-		        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
-
 		        if ((HAL_GetTick() - tIN_varre) > DT_VARRE) {
 		          tIN_varre = HAL_GetTick();  // salva tIN p/ prox tempo varredura
 		          switch (sttVARRE)
@@ -500,18 +492,36 @@ int main(void) {
 
 		        break;
 		      case MACHINE_STATE_LDR_NOT_LOCAL:
-		        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
-		        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
 		        if ((HAL_GetTick() - transmitTimer > REQUEST_TRANSMISSION_DELAY
-		            && transmitFlag)) {
+		            && canTransmitFlag)) {
 		          transmitTimer = HAL_GetTick();
 		          transmitCounter++;
-		          transmitFlag = FALSE;
+		          canTransmitFlag = FALSE;
+
+		          turnOffLeds();
+		          isWaitingForUartResponse = TRUE;
+
 		          HAL_UART_Transmit_IT(&huart1, requestBuffer,
 		              sizeof(requestBuffer));
 		        }
 
-		        if (hasDataToDisplay) {
+		        if(isWaitingForUartResponse && (HAL_GetTick() - uartResponseWaitTimer > WAITING_REQUEST_LED_BLINK_DELAY)) {
+		          uartResponseWaitTimer = HAL_GetTick();
+		          HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15);
+		        } else if (!isWaitingForUartResponse){
+		          turnOffLeds();
+		          HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
+		        }
+
+		        // Da sinal de erro caso nao sejam respondidas requisicoes UART feitas
+		        if (transmitCounter >= MAX_TRANSMIT_TRIES) {
+		          milADC = transmitCounter % 10;
+		          cenADC = transmitCounter / 10;
+		          dezADC = SEVEN_SEG_E;
+		          uniADC = SEVEN_SEG_E;
+		        }
+
+
 		          if ((HAL_GetTick() - tIN_varre) > DT_VARRE) {
 		            tIN_varre = HAL_GetTick(); // salva tIN p/ prox tempo varredura
 		            switch (sttVARRE)
@@ -559,7 +569,7 @@ int main(void) {
 		            serial_data |= val7seg; // OR com val7seg = dado a serializar
 		            serializar(serial_data); // serializa dado p/74HC595 (shift reg)
 		          }  // -- fim da tarefa #3 - varredura do display
-		        }
+
 		        break;
 		}
 
@@ -764,6 +774,10 @@ void packSendBuffer(uint8_t * buffer, uint16_t val_adc) {
 	buffer[2] = (uint8_t) checksum >> 8;
 }
 
+void turnOffLeds() {
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15, GPIO_PIN_SET);
+}
+
 uint16_t calculateChecksum(uint8_t * buffer) {
 	return (uint16_t) buffer[0] + buffer[1];
 }
@@ -783,7 +797,7 @@ int compareBuffers(uint8_t * first, uint8_t * second) {
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-	transmitFlag = TRUE;
+	canTransmitFlag = TRUE;
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
