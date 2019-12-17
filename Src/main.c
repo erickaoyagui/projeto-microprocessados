@@ -222,6 +222,18 @@ int main(void) {
 
 		/* USER CODE BEGIN 3 */
 
+	  // Incrementa tempo do relogio
+	  if ((HAL_GetTick() - tIN_relogio) > SEGUNDO) {
+
+	    tIN_relogio = HAL_GetTick();
+	    incrementSeconds();
+
+	    if(minAnterior != getTempTimeMinutes()){
+	      setAdcState(ADC_STATE_SHOOT_ADC_CONVERSION);
+	      minAnterior = getTempTimeMinutes();
+	    }
+	  }
+
 		// Verifica se deve reiniciar contagem do relogio
 		if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_3) == GPIO_PIN_RESET) {
 			if (HAL_GetTick() - resetClockTimer > RESET_CLOCK_TIME) {
@@ -338,18 +350,6 @@ int main(void) {
 		          serializar(serial_data); // serializa dado p/74HC595 (shift reg)
 		        }
 		      case CLOCK_EDIT_MODE_RUN:
-
-		        // Incrementa tempo do relogio
-		        if ((HAL_GetTick() - tIN_relogio) > SEGUNDO) {
-
-		          tIN_relogio = HAL_GetTick();
-		          incrementSeconds();
-
-		          if(minAnterior != getTempTimeMinutes()){
-		            setAdcState(ADC_STATE_SHOOT_ADC_CONVERSION);
-		            minAnterior = getTempTimeMinutes();
-		          }
-		        }
 
 		        // Envia para o display
 		        if ((HAL_GetTick() - tIN_varre) > DT_VARRE) {
