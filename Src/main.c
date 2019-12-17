@@ -286,6 +286,13 @@ int main(void) {
 
 		switch (getMachineState()) {
 		  case MACHINE_STATE_CLOCK:
+		    turnOffLeds();
+		    if(getClockEditMode() == CLOCK_EDIT_MODE_HOUR) {
+		      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_RESET);
+		    } else if (getClockEditMode() == CLOCK_EDIT_MODE_MINUTES) {
+		      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+		    }
+
 		    switch (getClockEditMode()) {
 		      case CLOCK_EDIT_MODE_MINUTES:
 		      case CLOCK_EDIT_MODE_HOUR:
