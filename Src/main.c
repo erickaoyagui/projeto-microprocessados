@@ -72,7 +72,7 @@
 #define DT_VARRE  5             // inc varredura a cada 5 ms (~200 Hz)
 #define DT_SELECT  200
 #define DIGITO_APAGADO 0x10    // kte valor p/ apagar um d�ｿｽgito no display
-#define SEGUNDO 30
+#define SEGUNDO 100
 #define MINUTO 60*SEGUNDO
 #define RESET_CLOCK_TIME 3000
 #define MAX_TRANSMIT_TRIES 5
@@ -92,13 +92,13 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-ADC_HandleTypeDef hadc1;
 volatile int receivedDataFlag = FALSE,
     canTransmitFlag = TRUE,
 		shouldSendAdcValue = FALSE,
 		isWaitingForUartResponse = FALSE;
 
 int transmitCounter = 0;
+ADC_HandleTypeDef hadc1;
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
@@ -128,17 +128,18 @@ void packSendBuffer(uint8_t * buffer, uint16_t val_adc);
 int isChecksumCorrect(uint8_t * receiveBuffer, uint16_t calculatedChecksum);
 uint16_t getADCValueFromBuffer(uint8_t * receiveBuffer);
 void turnOffLeds();
+int isBufferReset(uint8_t * receiveBuffer);
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-int16_t val_adc = 0;                 // var global: valor lido no ADC
-int16_t receivedValAdc = 0;
+volatile int16_t val_adc = 0,
+    receivedValAdc = 0;
 
-uint8_t requestBuffer[BUFFER_SIZE] = { 0x72, 0x72, 0x72, 0x72 };
-uint8_t receiveBuffer[BUFFER_SIZE] = { 0x00, 0x00, 0x00, 0x00 };
-uint8_t dataBuffer[BUFFER_SIZE] = { 0x00, 0x00, 0x00, 0x00 };
+uint8_t requestBuffer[BUFFER_SIZE] = { 0x72, 0x72, 0x72, 0x72 },
+    receiveBuffer[BUFFER_SIZE] = { 0x00, 0x00, 0x00, 0x00 },
+    dataBuffer[BUFFER_SIZE] = { 0x00, 0x00, 0x00, 0x00 };
 
 void resetClockStTimer(stHour * actualTime) {
 	actualTime->seconds = 0;
@@ -252,17 +253,16 @@ int main(void) {
 		  } else {
 		    // entao eh dados
 		    if (isChecksumCorrect(receiveBuffer,
-		        calculateChecksum(receiveBuffer))) {
+		        calculateChecksum(receiveBuffer)) && !isBufferReset(receiveBuffer)) {
 
 		      receivedValAdc = getADCValueFromBuffer(receiveBuffer);
 
 		      transmitCounter = 0;
 		      isWaitingForUartResponse = FALSE;
 		    }
-
 		  }
-		  receivedDataFlag = FALSE;
 
+		  receivedDataFlag = FALSE;
 		  HAL_UART_Receive_IT(&huart1, receiveBuffer, sizeof(receiveBuffer));
 		}
 
@@ -463,7 +463,7 @@ int main(void) {
 
 		        if(isWaitingForUartResponse && (HAL_GetTick() - uartResponseWaitTimer > WAITING_REQUEST_LED_BLINK_DELAY)) {
 		          uartResponseWaitTimer = HAL_GetTick();
-		          HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15);
+		          HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15 | GPIO_PIN_5);
 		        } else if (!isWaitingForUartResponse){
 		          turnOffLeds();
 		          HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
@@ -475,6 +475,9 @@ int main(void) {
 		          cenADC = transmitCounter / 10;
 		          dezADC = SEVEN_SEG_E;
 		          uniADC = SEVEN_SEG_E;
+
+		          HAL_UART_Receive_IT(&huart1, receiveBuffer, sizeof(receiveBuffer));
+
 		        } else {
 		          // converter o valor recebido em decimais p/ display
 		          miliVolt = receivedValAdc * 3300 / 4095;
@@ -655,7 +658,7 @@ static void MX_USART1_UART_Init(void) {
 
 	/* USER CODE END USART1_Init 1 */
 	huart1.Instance = USART1;
-	huart1.Init.BaudRate = 9600;
+	huart1.Init.BaudRate = 38400;
 	huart1.Init.WordLength = UART_WORDLENGTH_8B;
 	huart1.Init.StopBits = UART_STOPBITS_1;
 	huart1.Init.Parity = UART_PARITY_NONE;
@@ -740,7 +743,7 @@ void packSendBuffer(uint8_t * buffer, uint16_t val_adc) {
 }
 
 void turnOffLeds() {
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15 | GPIO_PIN_5, GPIO_PIN_SET);
 }
 
 uint16_t calculateChecksum(uint8_t * buffer) {
@@ -761,6 +764,17 @@ int compareBuffers(uint8_t * first, uint8_t * second) {
 	return 0;
 }
 
+int isBufferReset(uint8_t * receiveBuffer) {
+  int i;
+  for(i = 0; i < BUFFER_SIZE; i++) {
+    if(receiveBuffer[i] != '\0') {
+      return FALSE;
+    }
+  }
+
+  return TRUE;
+}
+
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 	canTransmitFlag = TRUE;
 }
@@ -775,7 +789,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
 		val_adc = HAL_ADC_GetValue(&hadc1);  // capta valor adc
 
 		// Verifica se deve enviar valor atualizado para outra placa via UART
-		if(shouldSendAdcValue) {
+		if(shouldSendAdcValue && canTransmitFlag) {
+		  canTransmitFlag = FALSE;
 		  shouldSendAdcValue = FALSE;
 		  packSendBuffer(dataBuffer, val_adc);
 		  HAL_UART_Transmit_IT(&huart1, dataBuffer, sizeof(dataBuffer));
