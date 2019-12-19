@@ -231,7 +231,7 @@ void EXTI1_IRQHandler(void)
 	if ((HAL_GetTick() - tIN_IRQ1) > DT_DEBOUNCING)
 		  {
 		    tIN_IRQ1 = HAL_GetTick();                // tIN (ms) da �ｿｽltima IRQ1
-		    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == 0)
+		    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == 0 && (machineState == MACHINE_STATE_CLOCK))
 		    {
 		    	switch (clockEditMode){
 		    		case CLOCK_EDIT_MODE_HOUR:
@@ -282,7 +282,7 @@ void EXTI3_IRQHandler(void)
   if ((HAL_GetTick() - tIN_IRQ3) > DT_DEBOUNCING)
   {
     tIN_IRQ3 = HAL_GetTick();                // tIN (ms) da �ｿｽltima IRQ1
-    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_3) == 0)
+    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_3) == 0 && (clockEditMode == CLOCK_EDIT_MODE_RUN))
     {
       ++machineState;
       if (machineState == MACHINE_STATE_LDR_LOCAL) {

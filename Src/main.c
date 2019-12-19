@@ -75,9 +75,9 @@
 #define SEGUNDO 100
 #define MINUTO 60*SEGUNDO
 #define RESET_CLOCK_TIME 3000
-#define MAX_TRANSMIT_TRIES 5
+#define MAX_TRANSMIT_TRIES 3
 #define BUFFER_SIZE 4
-#define REQUEST_TRANSMISSION_DELAY (uint32_t) MINUTO
+#define REQUEST_TRANSMISSION_DELAY (uint32_t) 250
 #define WAITING_REQUEST_LED_BLINK_DELAY 100
 #define SEVEN_SEG_E 14
 
@@ -94,8 +94,7 @@
 /* Private variables ---------------------------------------------------------*/
 volatile int receivedDataFlag = FALSE,
     canTransmitFlag = TRUE,
-		shouldSendAdcValue = FALSE,
-		isWaitingForUartResponse = FALSE;
+		shouldSendAdcValue = FALSE;
 
 int transmitCounter = 0;
 ADC_HandleTypeDef hadc1;
@@ -173,7 +172,8 @@ int main(void) {
 			tIN_select = 0;
 
 	volatile uint32_t resetClockTimer = 0,
-	    transmitTimer = 0,
+	    transmitTimer = -6000,
+	    abortTime = 0,
 	    uartResponseWaitTimer = 0;
 
 	/* USER CODE END 1 */
@@ -246,6 +246,7 @@ int main(void) {
 			resetClockTimer = HAL_GetTick();
 		}
 
+		// Verifica se recebeu dados e faz tratamento de acordo
 		if (receivedDataFlag) {
 		  if (isRequestToSendData(receiveBuffer, requestBuffer)) {
 		    setAdcState(ADC_STATE_SHOOT_ADC_CONVERSION);
@@ -254,11 +255,8 @@ int main(void) {
 		    // entao eh dados
 		    if (isChecksumCorrect(receiveBuffer,
 		        calculateChecksum(receiveBuffer)) && !isBufferReset(receiveBuffer)) {
-
-		      receivedValAdc = getADCValueFromBuffer(receiveBuffer);
-
 		      transmitCounter = 0;
-		      isWaitingForUartResponse = FALSE;
+		      receivedValAdc = getADCValueFromBuffer(receiveBuffer);
 		    }
 		  }
 
@@ -455,29 +453,31 @@ int main(void) {
 		          canTransmitFlag = FALSE;
 
 		          turnOffLeds();
-		          isWaitingForUartResponse = TRUE;
-
 		          HAL_UART_Transmit_IT(&huart1, requestBuffer,
 		              sizeof(requestBuffer));
 		        }
 
-		        if(isWaitingForUartResponse && (HAL_GetTick() - uartResponseWaitTimer > WAITING_REQUEST_LED_BLINK_DELAY)) {
+		        // Acende LEDS e toca buzer
+		        if((transmitCounter) && (HAL_GetTick() - uartResponseWaitTimer > WAITING_REQUEST_LED_BLINK_DELAY)) {
 		          uartResponseWaitTimer = HAL_GetTick();
 		          HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15 | GPIO_PIN_5);
-		        } else if (!isWaitingForUartResponse){
+		        } else if (!transmitCounter){
 		          turnOffLeds();
 		          HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
 		        }
 
 		        // Da sinal de erro caso nao sejam respondidas requisicoes UART feitas
-		        if (transmitCounter >= MAX_TRANSMIT_TRIES) {
+		        if (transmitCounter > MAX_TRANSMIT_TRIES) {
 		          milADC = transmitCounter % 10;
 		          cenADC = transmitCounter / 10;
 		          dezADC = SEVEN_SEG_E;
 		          uniADC = SEVEN_SEG_E;
 
-		          HAL_UART_Receive_IT(&huart1, receiveBuffer, sizeof(receiveBuffer));
-
+		          // Aborta operações da UART caso atinja timeout
+		          if(HAL_GetTick() - abortTime > 800) {
+		            abortTime = HAL_GetTick();
+		            HAL_UART_Abort_IT(&huart1);
+		          }
 		        } else {
 		          // converter o valor recebido em decimais p/ display
 		          miliVolt = receivedValAdc * 3300 / 4095;
@@ -777,10 +777,12 @@ int isBufferReset(uint8_t * receiveBuffer) {
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 	canTransmitFlag = TRUE;
+	//HAL_UART_Abort_IT(&huart1);
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	receivedDataFlag = TRUE;
+	//HAL_UART_Abort_IT(&huart1);
 }
 
 // fn que atende ao callback da ISR do conversor ADC1
@@ -798,6 +800,11 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
 
 		setAdcState(ADC_STATE_CONVERT_TO_MILI_VOLTS);
 	}
+}
+
+void HAL_UART_AbortCpltCallback (UART_HandleTypeDef *huart) {
+  HAL_UART_Receive_IT(&huart1, receiveBuffer, sizeof(receiveBuffer));
+  canTransmitFlag = TRUE;
 }
 
 /* USER CODE END 4 */

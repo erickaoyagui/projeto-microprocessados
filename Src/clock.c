@@ -82,11 +82,13 @@ void incrementTempTimeMinutes(){
 
 void incrementTempTimeHours(){
 	tempTime.hours++;
+	tempTime.seconds = 0;
 }
 
 void incrementTempTimeSeconds() {
   tempTime.seconds++;
   verifyTempTime();
+  tempTime.seconds = 0;
 }
 
 int getTempTimeMinutes(){
